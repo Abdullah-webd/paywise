@@ -199,6 +199,10 @@ def _trim_messages(messages: list, max_count: int = MAX_CONTEXT_MESSAGES) -> lis
         if idx is None:
             break  # can't find parent; give up to avoid infinite loop
         trimmed = [messages[0]] + messages[idx:]
+    # Also strip orphaned AIMessages with tool_calls that have no matching
+    # ToolMessage responses (corrupted checkpointer state).
+    while len(trimmed) > 1 and isinstance(trimmed[-1], AIMessage) and getattr(trimmed[-1], "tool_calls", None):
+        trimmed = trimmed[:-1]
     return trimmed
 
 
@@ -293,7 +297,7 @@ def _ack_for(action_type: str, result: dict) -> str:
         return f"E no go through. {result.get('detail') or result.get('error')}."
     if action_type == "onboard_merchant":
         from app.config import settings
-        wallet_url = settings.app_base_url.rstrip("/") + "/wallet/login"
+        wallet_url = settings.base_url.rstrip("/") + "/wallet/login"
         password = result.get("password", "")
         return (
             f"You welcome, {result.get('name')}! PayWise don set. 🙌\n\n"
