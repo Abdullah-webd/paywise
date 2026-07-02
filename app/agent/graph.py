@@ -172,37 +172,55 @@ def _trim_messages(messages: list, max_count: int = MAX_CONTEXT_MESSAGES) -> lis
     Everything in between gets dropped. The DB remembers the facts; the agent
     only needs recent conversational flow to be coherent.
 
-    CRITICAL: never split between an AIMessage(tool_calls=...) and the
-    ToolMessage(s) that answer it. OpenAI rejects an orphan tool message
-    ("messages with role 'tool' must be a response to a preceeding message
-    with 'tool_calls'"). So we extend the window forward until the oldest
-    kept message is NOT a ToolMessage.
+    Also handles corrupted checkpointer state: removes orphaned AIMessages
+    with tool_calls that have no matching ToolMessage responses, and removes
+    orphaned ToolMessages whose parent AIMessage was removed.
     """
-    if len(messages) <= max_count:
-        return messages
-    # keep first message (original input) + last N
-    trimmed = [messages[0]] + messages[-max_count:]
-    # If the first kept recent message is a ToolMessage, it's orphaned.
-    # Walk back to include its parent AIMessage(tool_calls).
     from langchain_core.messages import ToolMessage as _TM
+
+    # ---- Step 1: scan for orphaned tool_calls globally ----
+    # Collect all valid tool_call_ids that have a matching ToolMessage
+    valid_tool_call_ids: set = set()
+    for m in messages:
+        if isinstance(m, _TM) and getattr(m, "tool_call_id", None):
+            valid_tool_call_ids.add(m.tool_call_id)
+
+    # Remove any AIMessage whose tool_calls ALL lack responses (orphaned)
+    cleaned: list = []
+    for m in messages:
+        if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
+            orphaned = all(
+                tc.get("id") not in valid_tool_call_ids
+                for tc in m.tool_calls
+            )
+            if orphaned:
+                continue  # skip this orphaned AI message
+        # Also skip orphaned ToolMessages (parent AIMessage was removed)
+        if isinstance(m, _TM) and getattr(m, "tool_call_id", None):
+            if m.tool_call_id not in valid_tool_call_ids:
+                continue
+        cleaned.append(m)
+
+    # ---- Step 2: standard trimming ----
+    if len(cleaned) <= max_count:
+        return cleaned
+
+    trimmed = [cleaned[0]] + cleaned[-max_count:]
+    # If the first kept recent message is a ToolMessage, walk back to include
+    # its parent AIMessage(tool_calls).
     while len(trimmed) > 1 and isinstance(trimmed[1], _TM):
-        # find the AIMessage that produced this tool_call_id
         tool_id = trimmed[1].tool_call_id
         idx = None
-        for i in range(len(messages) - 1, -1, -1):
-            m = messages[i]
+        for i in range(len(cleaned) - 1, -1, -1):
+            m = cleaned[i]
             if (not isinstance(m, _TM)
                     and getattr(m, "tool_calls", None)
                     and any(tc.get("id") == tool_id for tc in m.tool_calls)):
                 idx = i
                 break
         if idx is None:
-            break  # can't find parent; give up to avoid infinite loop
-        trimmed = [messages[0]] + messages[idx:]
-    # Also strip orphaned AIMessages with tool_calls that have no matching
-    # ToolMessage responses (corrupted checkpointer state).
-    while len(trimmed) > 1 and isinstance(trimmed[-1], AIMessage) and getattr(trimmed[-1], "tool_calls", None):
-        trimmed = trimmed[:-1]
+            break
+        trimmed = [cleaned[0]] + cleaned[idx:]
     return trimmed
 
 
