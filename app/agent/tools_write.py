@@ -326,6 +326,28 @@ async def propose_create_collection_account(
         return {"error": "debt_not_found",
                 "detail": f"No debt found with id={debt_id}. "
                           "Call list_recent_debts to get the correct debt_id first."}
+    
+    # Validate debtor exists — LLMs sometimes confuse debt_id with debtor_id
+    debtor = await db.debtors.find_one({"_id": _oid(debtor_id)})
+    if not debtor:
+        # The agent probably passed the wrong debtor_id. Try to recover from the debt record.
+        actual_debtor_id = debt.get("debtor_id")
+        if actual_debtor_id:
+            actual_debtor = await db.debtors.find_one({"_id": _oid(actual_debtor_id)})
+            if actual_debtor:
+                debtor_id = str(actual_debtor["_id"])
+                debtor = actual_debtor
+            else:
+                return {"error": "debtor_not_found",
+                        "detail": f"debtor_id={debtor_id} doesn't exist. "
+                                  "The debt record has debtor_id={actual_debtor_id} which also doesn't exist. "
+                                  "The debt may be orphaned."}
+        else:
+            return {"error": "debtor_not_found",
+                    "detail": f"debtor_id={debtor_id} doesn't exist. "
+                              "Call find_debtors_by_name to find the correct debtor. "
+                              f"The correct debtor_id for this debt is "
+                              f"likely {debt.get('debtor_id', 'unknown')}."}
 
     return {
         "action_type": "create_collection_account",
