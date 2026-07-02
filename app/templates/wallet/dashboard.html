@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayWise · Wallet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --green-900: #064e3b; --green-700: #047857; --green-500: #10b981;
+    --green-50: #ecfdf5; --ink: #0f172a; --muted: #64748b;
+    --line: #e2e8f0; --bg: #f8fafc; --danger: #dc2626;
+    --amber: #f59e0b; --amber-bg: #fffbeb;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink); min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  /* ===== top bar ===== */
+  header {
+    background: #fff; border-bottom: 1px solid var(--line);
+    padding: 14px 20px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 10;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--green-500), var(--green-700));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 18px;
+  }
+  .logo-name { font-weight: 800; font-size: 18px; }
+  .biz { color: var(--muted); font-size: 14px; }
+  .logout {
+    color: var(--muted); text-decoration: none; font-size: 14px;
+    font-weight: 600; padding: 8px 14px; border-radius: 8px; transition: background .15s;
+  }
+  .logout:hover { background: var(--bg); color: var(--ink); }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ===== balance card ===== */
+  .balance-card {
+    background: linear-gradient(135deg, var(--green-700) 0%, var(--green-900) 100%);
+    color: #fff; border-radius: 24px; padding: 32px 28px;
+    box-shadow: 0 20px 50px rgba(6,78,59,.25);
+    position: relative; overflow: hidden;
+  }
+  .balance-card::after {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(255,255,255,.08);
+  }
+  .balance-card::before {
+    content: ''; position: absolute; bottom: -40px; left: -40px;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: rgba(255,255,255,.06);
+  }
+  .bal-label { font-size: 13px; opacity: .85; font-weight: 500; margin-bottom: 8px; }
+  .bal-amount { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; }
+  .bal-acct {
+    margin-top: 18px; display: flex; align-items: center; gap: 8px;
+    font-size: 13px; opacity: .9;
+  }
+  .bal-acct code {
+    background: rgba(255,255,255,.15); padding: 3px 8px;
+    border-radius: 6px; font-family: inherit; font-weight: 600;
+  }
+  .actions { margin-top: 20px; display: flex; gap: 10px; }
+  .btn {
+    padding: 12px 22px; border-radius: 12px; border: none;
+    font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+    transition: transform .1s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: #fff; color: var(--green-900); }
+  .btn-ghost { background: rgba(255,255,255,.15); color: #fff; }
+
+  /* ===== stat grid ===== */
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-top: 20px;
+  }
+  .stat {
+    background: #fff; border-radius: 16px; padding: 18px;
+    border: 1px solid var(--line);
+  }
+  .stat-num { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+
+  /* ===== tabs ===== */
+  .tabs {
+    display: flex; gap: 6px; margin-top: 28px; margin-bottom: 14px;
+    background: #fff; padding: 5px; border-radius: 12px; border: 1px solid var(--line);
+    width: fit-content;
+  }
+  .tab {
+    padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all .15s; border: none;
+    background: transparent;
+  }
+  .tab.active { background: var(--ink); color: #fff; }
+
+  /* ===== table ===== */
+  .list { background: #fff; border-radius: 16px; border: 1px solid var(--line); overflow: hidden; }
+  .list-head, .list-row {
+    display: grid; align-items: center; padding: 14px 18px;
+  }
+  .list-head {
+    grid-template-columns: 1.4fr 1fr 1fr .9fr;
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1px solid var(--line); background: var(--bg);
+  }
+  .list-row {
+    grid-template-columns: 1.4fr 1fr 1fr .9fr;
+    border-bottom: 1px solid var(--line); font-size: 14px;
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background: var(--green-50); }
+  .pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+  }
+  .pill-green { background: var(--green-50); color: var(--green-700); }
+  .pill-amber { background: var(--amber-bg); color: var(--amber); }
+  .pill-gray  { background: #f1f5f9; color: var(--muted); }
+  .empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  /* ===== modal ===== */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(15,23,42,.5);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 20px; padding: 32px 28px;
+    width: 92%; max-width: 420px;
+    animation: pop .2s ease;
+  }
+  @keyframes pop { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  .modal .sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  .modal .balance-avail {
+    background: var(--green-50); border-radius: 10px; padding: 12px;
+    margin-bottom: 18px; font-size: 14px;
+  }
+  .modal .balance-avail b { color: var(--green-700); }
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+
+  /* ===== toast ===== */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 14px 22px; border-radius: 12px;
+    font-size: 14px; font-weight: 600; opacity: 0; transition: all .3s; z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--green-700); }
+  .toast.error { background: var(--danger); }
+
+  @media (max-width: 640px) {
+    .bal-amount { font-size: 34px; }
+    .stats { grid-template-columns: 1fr; }
+    .list-head, .list-row { grid-template-columns: 1.5fr 1fr .9fr; }
+    .col-hide { display: none; }
+    .actions { flex-direction: column; }
+    .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-mark">P</div>
+      <div>
+        <div class="logo-name">PayWise</div>
+        <div class="biz" id="biz-name">—</div>
+      </div>
+    </div>
+    <a href="/wallet/logout" class="logout">Log out</a>
+  </header>
+
+  <div class="wrap">
+    <!-- balance -->
+    <div class="balance-card">
+      <div class="bal-label">Wallet balance</div>
+      <div class="bal-amount" id="balance">₦0</div>
+      <div class="bal-acct" id="acct-line" style="display:none;">
+        Settlement account: <code id="acct-num">—</code>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="openWithdraw()">Withdraw cash</button>
+        <button class="btn btn-ghost" onclick="refresh()">Refresh</button>
+      </div>
+    </div>
+
+    <!-- stats -->
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="stat-outstanding">₦0</div><div class="stat-label">Outstanding (owed to you)</div></div>
+      <div class="stat"><div class="stat-num" id="stat-open">0</div><div class="stat-label">Open debts</div></div>
+      <div class="stat"><div class="stat-num" id="stat-paid">0</div><div class="stat-label">Payments received</div></div>
+    </div>
+
+    <!-- tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(this,'tx')">Transactions</button>
+      <button class="tab" onclick="switchTab(this,'debts')">Debts</button>
+    </div>
+
+    <!-- transactions list -->
+    <div id="tx-panel" class="list">
+      <div class="list-head">
+        <div>Debtor</div><div class="col-hide">Goods</div><div>Amount</div><div>Date</div>
+      </div>
+      <div id="tx-body"></div>
+    </div>
+
+    <!-- debts list -->
+    <div id="debts-panel" class="list" style="display:none;">
+      <div class="list-head">
+        <div>Debtor</div><div class="col-hide">Goods</div><div>Balance</div><div>Status</div>
+      </div>
+      <div id="debts-body"></div>
+    </div>
+  </div>
+
+  <!-- withdraw modal -->
+  <div class="modal-bg" id="modal">
+    <div class="modal">
+      <h2>Withdraw to bank</h2>
+      <p class="sub">Move your wallet balance to any Nigerian bank account.</p>
+      <div class="balance-avail">Available balance: <b id="modal-bal">₦0</b></div>
+      <form id="withdraw-form">
+        <div class="field" style="margin-bottom:14px;">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Amount (₦)</label>
+          <input type="number" name="amount_naira" id="w-amount" placeholder="5000" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
+        </div>
+        <div class="field" style="margin-bottom:14px;">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Bank code</label>
+          <input type="text" name="bank_code" placeholder="e.g. 058 (GTBank)" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
+        </div>
+        <div class="row">
+          <div class="field" style="margin-bottom:14px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Account number</label>
+            <input type="text" name="account_number" placeholder="0123456789" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
+          </div>
+          <div class="field" style="margin-bottom:18px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Account name</label>
+            <input type="text" name="account_name" placeholder="Tunde Bello" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,var(--green-500),var(--green-700));color:#fff;">Confirm withdrawal</button>
+        <button type="button" onclick="closeWithdraw()" class="btn" style="width:100%;margin-top:8px;background:var(--bg);color:var(--muted);">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+let currentBalance = 0;
+
+async function load() {
+  const [s, t, d] = await Promise.all([
+    fetch('/wallet/api/summary').then(r => r.json()),
+    fetch('/wallet/api/transactions').then(r => r.json()),
+    fetch('/wallet/api/debts').then(r => r.json()),
+  ]);
+  document.getElementById('biz-name').textContent = s.business_name || s.name;
+  document.getElementById('balance').textContent = s.balance;
+  currentBalance = s.balance_kobo;
+  document.getElementById('modal-bal').textContent = s.balance;
+  document.getElementById('stat-outstanding').textContent = s.outstanding;
+  document.getElementById('stat-open').textContent = s.open_debts;
+  document.getElementById('stat-paid').textContent = s.paid_count;
+  if (s.account_number) {
+    document.getElementById('acct-num').textContent = s.account_number;
+    document.getElementById('acct-line').style.display = 'flex';
+  }
+
+  // transactions
+  const tb = document.getElementById('tx-body');
+  if (!t.transactions.length) {
+    tb.innerHTML = '<div class="empty">No payments yet. When debtors pay their temp accounts, they\'ll show here.</div>';
+  } else {
+    tb.innerHTML = t.transactions.map(x => `
+      <div class="list-row">
+        <div><b>${esc(x.debtor)}</b></div>
+        <div class="col-hide" style="color:var(--muted);">${esc(x.goods)}</div>
+        <div style="color:var(--green-700);font-weight:700;">+${x.amount}</div>
+        <div style="color:var(--muted);font-size:13px;">${x.date}</div>
+      </div>`).join('');
+  }
+
+  // debts
+  const db = document.getElementById('debts-body');
+  if (!d.debts.length) {
+    db.innerHTML = '<div class="empty">No debts recorded. Send a voice note to PayWise on WhatsApp to record a credit sale.</div>';
+  } else {
+    db.innerHTML = d.debts.map(x => {
+      const cls = x.status === 'PAID' ? 'pill-green' : x.status === 'PARTIAL' ? 'pill-amber' : 'pill-gray';
+      return `
+      <div class="list-row">
+        <div><b>${esc(x.debtor)}</b><div style="font-size:12px;color:var(--muted);">${esc(x.goods)}</div></div>
+        <div class="col-hide" style="color:var(--muted);">${x.amount}<br><span style="font-size:12px;">paid ${x.paid}</span></div>
+        <div style="font-weight:700;">${x.balance}</div>
+        <div><span class="pill ${cls}">${x.status}</span></div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+function switchTab(btn, panel) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tx-panel').style.display = panel === 'tx' ? '' : 'none';
+  document.getElementById('debts-panel').style.display = panel === 'debts' ? '' : 'none';
+}
+
+function openWithdraw() { document.getElementById('modal').classList.add('open'); }
+function closeWithdraw() { document.getElementById('modal').classList.remove('open'); }
+
+document.getElementById('withdraw-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    const r = await fetch('/wallet/api/withdraw', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Withdrawal failed', 'error'); return; }
+    toast('✅ Withdrawal sent successfully!', 'success');
+    closeWithdraw(); e.target.reset(); load();
+  } catch (err) { toast('Network error', 'error'); }
+});
+
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + (type||'');
+  setTimeout(() => t.className = 'toast', 3500);
+}
+function refresh() { load(); toast('Updated'); }
+
+load();
+setInterval(load, 30000);  // auto-refresh every 30s
+</script>
+</body>
+</html>

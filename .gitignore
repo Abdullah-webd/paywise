@@ -1,0 +1,84 @@
+# ---- Secrets ----
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ---- Virtual envs ----
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ---- Testing / coverage ----
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ---- Editors / IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ---- Logs / runtime ----
+*.log
+logs/
+*.pid
+
+# ---- Dev tools & test scripts (keep local, don't push) ----
+testingrev.py
+test_gemini_tts.py
+test_new_voice.py
+test_tts_models.py
+reset_demo.py
+sim_pay.py
+cleanup_nomba_vas.py
+list_vas.py
+_db_dump.py
+_find_and_expire.py
+_find_ours.py
+_nomba_test_settle.py
+_register_phantom.py
+_scan_all.py
+PRESENTATION.md
+
+# ---- TTS test audio (keep local, don't push) ----
+new_voice_*.wav
+tts_*.wav
+tts_test_*.wav

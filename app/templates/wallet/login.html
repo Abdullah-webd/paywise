@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayWise · Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --green-900: #064e3b;
+    --green-700: #047857;
+    --green-500: #10b981;
+    --green-50:  #ecfdf5;
+    --ink:       #0f172a;
+    --muted:     #64748b;
+    --line:      #e2e8f0;
+    --bg:        #f8fafc;
+    --danger:    #dc2626;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: radial-gradient(ellipse at top, #d1fae5 0%, var(--bg) 55%);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 36px;
+  }
+  .logo-mark {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--green-500), var(--green-700));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 22px;
+    box-shadow: 0 8px 24px rgba(16,185,129,.35);
+  }
+  .logo-name { font-weight: 800; font-size: 22px; letter-spacing: -.5px; }
+  .card {
+    width: 100%; max-width: 400px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 28px;
+    box-shadow: 0 20px 50px rgba(15,23,42,.08);
+    border: 1px solid var(--line);
+  }
+  h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+  .field { margin-bottom: 18px; }
+  input {
+    width: 100%; padding: 14px 16px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    font-family: inherit; font-size: 15px;
+    transition: border-color .15s, box-shadow .15s;
+    background: #fff;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--green-500);
+    box-shadow: 0 0 0 4px var(--green-50);
+  }
+  button {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--green-500), var(--green-700));
+    color: #fff;
+    font-family: inherit; font-size: 16px; font-weight: 700;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .15s;
+    box-shadow: 0 10px 24px rgba(16,185,129,.3);
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(16,185,129,.4); }
+  button:active { transform: translateY(0); }
+  .error {
+    background: #fef2f2; color: var(--danger);
+    padding: 12px 14px; border-radius: 10px;
+    font-size: 14px; margin-bottom: 18px;
+    border: 1px solid #fecaca;
+  }
+  .hint {
+    margin-top: 22px; padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6;
+  }
+  .hint b { color: var(--ink); }
+</style>
+</head>
+<body>
+  <div class="logo">
+    <div class="logo-mark">P</div>
+    <div class="logo-name">PayWise</div>
+  </div>
+
+  <div class="card">
+    <h1>Welcome back 👋</h1>
+    <p class="sub">Log in to your wallet to see your balance and cash out.</p>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/wallet/login">
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input id="phone" name="phone" type="tel" placeholder="+234 809 191 8235" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Your PayWise password" required>
+      </div>
+      <button type="submit">Log in →</button>
+    </form>
+
+    <div class="hint">
+      Don't know your password? Ask PayWise on WhatsApp:<br>
+      <b>"what's my login?"</b> and we'll send it to you.
+    </div>
+  </div>
+</body>
+</html>

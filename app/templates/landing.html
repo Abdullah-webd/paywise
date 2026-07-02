@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayWise — The Bookkeeper Nigeria's Backbone Has Been Waiting For</title>
+<meta name="description" content="PayWise is a WhatsApp-based AI bookkeeper for Nigerian market traders. Record credit sales by voice note. Track who owes what. Get paid automatically.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+  :root {
+    --green-900: #064e3b; --green-700: #047857; --green-500: #10b981; --green-400: #34d399;
+    --green-50: #ecfdf5; --green-100: #d1fae5;
+    --amber: #f59e0b; --amber-light: #fef3c7;
+    --ink: #0f172a; --muted: #64748b; --light: #94a3b8;
+    --line: #e2e8f0; --bg: #ffffff; --bg-soft: #f8fafc;
+  }
+  body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.6; }
+
+  /* Nav */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .inner {
+    max-width: 1200px; margin: 0 auto; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  nav .logo { display: flex; align-items: center; gap: 8px; font-size: 1.5rem; font-weight: 800; color: var(--green-900); text-decoration: none; }
+  nav .logo img { height: 36px; }
+  .btn {
+    display: inline-block; padding: 12px 28px; border-radius: 12px;
+    font-weight: 600; font-size: 0.95rem; text-decoration: none;
+    transition: all 0.2s; cursor: pointer; border: none; font-family: inherit;
+  }
+  .btn-primary { background: var(--green-700); color: #fff; }
+  .btn-primary:hover { background: var(--green-900); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(4,120,87,0.25); }
+  .btn-outline { background: transparent; color: var(--green-700); border: 2px solid var(--green-500); }
+  .btn-outline:hover { background: var(--green-50); }
+  .btn-amber { background: var(--amber); color: #fff; }
+  .btn-amber:hover { background: #d97706; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,158,11,0.3); }
+
+  /* Hero */
+  .hero {
+    padding: 140px 24px 80px; text-align: center; max-width: 900px; margin: 0 auto;
+  }
+  .hero .badge {
+    display: inline-block; padding: 6px 16px; border-radius: 100px;
+    background: var(--green-50); color: var(--green-700); font-size: 0.85rem; font-weight: 600;
+    margin-bottom: 24px;
+  }
+  .hero h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.15; margin-bottom: 20px; letter-spacing: -0.02em; }
+  .hero h1 span { color: var(--green-700); }
+  .hero p { font-size: 1.2rem; color: var(--muted); max-width: 650px; margin: 0 auto 36px; }
+  .hero .actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+  /* Sections */
+  section { padding: 80px 24px; }
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+  .section-tag { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--green-700); margin-bottom: 12px; }
+  .section-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.01em; }
+  .section-sub { font-size: 1.1rem; color: var(--muted); max-width: 600px; }
+
+  /* Stats */
+  #problem { background: var(--green-900); color: #fff; }
+  #problem .section-tag { color: var(--green-400); }
+  #problem .section-sub { color: var(--green-100); }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 48px; }
+  .stat-card {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px; padding: 28px; backdrop-filter: blur(8px);
+  }
+  .stat-card .number { font-size: 2.2rem; font-weight: 800; color: var(--green-400); line-height: 1.1; margin-bottom: 8px; }
+  .stat-card .label { font-size: 0.95rem; color: var(--green-100); }
+  .stat-card .source { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 8px; }
+
+  /* How it works */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 32px; margin-top: 48px; }
+  .step { text-align: center; }
+  .step .icon {
+    width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; margin: 0 auto 20px;
+  }
+  .step:nth-child(1) .icon { background: var(--green-50); }
+  .step:nth-child(2) .icon { background: var(--amber-light); }
+  .step:nth-child(3) .icon { background: #dbeafe; }
+  .step:nth-child(4) .icon { background: #fce7f3; }
+  .step h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
+  .step p { font-size: 0.9rem; color: var(--muted); max-width: 240px; margin: 0 auto; }
+
+  /* Features */
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 48px; }
+  .feature {
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: 16px; padding: 32px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .feature:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.06); }
+  .feature h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+  .feature p { color: var(--muted); font-size: 0.9rem; }
+
+  /* CTA */
+  #cta { background: linear-gradient(135deg, var(--green-900), #065f46); color: #fff; text-align: center; }
+  #cta .section-sub { color: var(--green-100); margin: 0 auto; }
+  #cta .btn { margin-top: 32px; }
+
+  /* Footer */
+  footer { padding: 40px 24px; text-align: center; color: var(--light); font-size: 0.85rem; border-top: 1px solid var(--line); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2.2rem; }
+    .section-title { font-size: 1.8rem; }
+    .hero { padding: 120px 20px 60px; }
+    section { padding: 48px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="inner">
+    <a href="#" class="logo"><img src="/static/paywise-logo.png" alt="PayWise"></a>
+    <a href="/wallet/login" class="btn btn-primary">Login</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <img src="/static/paywise-logo.png" alt="PayWise" style="height:60px;margin-bottom:24px;">
+  <div class="badge">🇳🇬 Built for Nigerian Market Traders</div>
+  <h1>The Bookkeeper <span>Nigeria's Backbone</span> Has Been Waiting For</h1>
+  <p>PayWise lives inside WhatsApp. No app to install. No password to remember. Just send a voice note in Pidgin, Yoruba, Hausa, Igbo, or English — and your ledger is updated instantly.</p>
+  <div class="actions">
+    <a href="#how" class="btn btn-primary">How It Works</a>
+    <a href="/wallet/login" class="btn btn-outline" style="color:var(--green-700);">Login to Wallet →</a>
+  </div>
+</section>
+
+<!-- The Problem -->
+<section id="problem">
+  <div class="section-inner">
+    <div class="section-tag">The Problem</div>
+    <h2 class="section-title">₦5–10 Trillion Lost Every Year</h2>
+    <p class="section-sub">Nigeria's 39.6 million micro and small businesses run the economy — but 70% track finances on paper. Every month, the average trader loses ₦50,000–150,000 just to forgotten debt.</p>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="number">39.6M</div>
+        <div class="label">Micro &amp; small businesses in Nigeria</div>
+        <div class="source">NBS / SMEDAN 2021</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">70%</div>
+        <div class="label">Use paper or manual bookkeeping</div>
+        <div class="source">PwC Nigeria MSME Survey</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">₦5–10T</div>
+        <div class="label">Lost annually to fraud, bad debt &amp; broken records</div>
+        <div class="source">TDPel / Business Insight News 2026</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">80%</div>
+        <div class="label">Of MSMEs locked out of formal credit</div>
+        <div class="source">NCGC via Nairametrics 2025</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="how">
+  <div class="section-inner">
+    <div class="section-tag">How It Works</div>
+    <h2 class="section-title">One Voice Note. That's It.</h2>
+    <p class="section-sub">No app. No form. No username. No password. Just talk to WhatsApp the way you talk to your customers.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="icon">🎤</div>
+        <h3>1. Send a Voice Note</h3>
+        <p>"Alhaji Sule carry 2 cartons milk for ₦20,000. Him number na 0807…"</p>
+      </div>
+      <div class="step">
+        <div class="icon">🧠</div>
+        <h3>2. AI Understands</h3>
+        <p>PayWise transcribes your voice, extracts the name, amount, goods, and phone number — in your language.</p>
+      </div>
+      <div class="step">
+        <div class="icon">🏦</div>
+        <h3>3. Debtor Gets Account</h3>
+        <p>A real bank account number is generated and sent to your debtor. They pay from any bank app.</p>
+      </div>
+      <div class="step">
+        <div class="icon">💰</div>
+        <h3>4. You Get Paid</h3>
+        <p>When money lands, your wallet updates instantly. Both parties get WhatsApp receipts. No manual work.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section style="background: var(--bg-soft);">
+  <div class="section-inner">
+    <div class="section-tag">Features</div>
+    <h2 class="section-title">Built for the Market, Not the Boardroom</h2>
+    <div class="features-grid">
+      <div class="feature">
+        <h3>🗣️ Voice-First</h3>
+        <p>Send voice notes in your natural speech. No typing required. Works even on basic phones with WhatsApp.</p>
+      </div>
+      <div class="feature">
+        <h3>🌍 5 Nigerian Languages</h3>
+        <p>Speak Pidgin, Yoruba, Hausa, Igbo, or English. PayWise replies in the same language — real dialect, not Google Translate.</p>
+      </div>
+      <div class="feature">
+        <h3>🏦 Real Bank Accounts</h3>
+        <p>Every debt gets a unique bank account number via Nomba. Debtors pay from any Nigerian bank app. No USSD. No payment links.</p>
+      </div>
+      <div class="feature">
+        <h3>⚡ Instant Settlement</h3>
+        <p>When a debtor pays, your wallet balance updates in real time. Both you and the debtor get WhatsApp receipts simultaneously.</p>
+      </div>
+      <div class="feature">
+        <h3>📒 Never Lose a Sale</h3>
+        <p>Started recording a debt but forgot the phone number? PayWise saves it as a draft. Complete it later. Nothing is ever lost.</p>
+      </div>
+      <div class="feature">
+        <h3>🔒 Trust by Design</h3>
+        <p>The AI proposes changes — only YOU confirm them. The system physically cannot write to your ledger without your "yes."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Languages -->
+<section>
+  <div class="section-inner" style="text-align:center;">
+    <div class="section-tag">Languages</div>
+    <h2 class="section-title">Speak Your Language</h2>
+    <p class="section-sub">PayWise speaks five Nigerian languages natively — with proper grammar, not word-for-word translation.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:32px;">
+      <div style="background:var(--green-50);padding:12px 24px;border-radius:100px;font-weight:700;color:var(--green-900);">🇳🇬 Pidgin</div>
+      <div style="background:var(--amber-light);padding:12px 24px;border-radius:100px;font-weight:700;color:#92400e;">🇳🇬 Yoruba</div>
+      <div style="background:#dbeafe;padding:12px 24px;border-radius:100px;font-weight:700;color:#1e40af;">🇳🇬 Hausa</div>
+      <div style="background:#fce7f3;padding:12px 24px;border-radius:100px;font-weight:700;color:#9d174d;">🇳🇬 Igbo</div>
+      <div style="background:#f3f4f6;padding:12px 24px;border-radius:100px;font-weight:700;color:#374151;">🇬🇧 English</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="section-inner">
+    <div class="section-tag" style="color:var(--green-400);">Get Started</div>
+    <h2 class="section-title">Already Using PayWise?</h2>
+    <p class="section-sub">Login to your wallet dashboard to check your balance, view transactions, see who owes you, and withdraw your money.</p>
+    <a href="/wallet/login" class="btn btn-amber">Login to Your Wallet →</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>PayWise — Built for the 39.6 million businesses that run Nigeria. 🇳🇬</p>
+</footer>
+
+</body>
+</html>
