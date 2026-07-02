@@ -155,6 +155,28 @@ async def _run_agent(sender: str, user_text: str, source: str) -> None:
         if source == "voice":
             await get_whatsapp().send_text(sender, "🧠 I dey think about wetin you talk…")
         final_state = await graph.ainvoke(init_state, config=config)
+    except KeyError as e:
+        # Corrupted checkpoint (e.g. stale 'pending_sends' from old LangGraph version) —
+        # clear the thread's history so it starts fresh.
+        if "pending_sends" in str(e):
+            log.warning("Corrupted checkpoint for %s, clearing history", sender)
+            try:
+                from app.db import get_db
+                thread_id = config["configurable"]["thread_id"]
+                await get_db().checkpoints.delete_many({"thread_id": thread_id})
+                final_state = await graph.ainvoke(init_state, config=config)
+            except Exception:
+                log.exception("retry after checkpoint clear also failed")
+                await get_whatsapp().send_text(
+                    sender, "Something go wrong for my side. Abeg try again."
+                )
+                return
+        else:
+            log.exception("agent run failed (KeyError)")
+            await get_whatsapp().send_text(
+                sender, "Something go wrong for my side. Abeg try again."
+            )
+            return
     except Exception:
         log.exception("agent run failed")
         await get_whatsapp().send_text(
