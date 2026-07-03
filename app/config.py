@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     twilio_account_sid: str
     twilio_auth_token: str
     twilio_whatsapp_from: str = "whatsapp:+14155238886"
+    twilio_sms_from: str = ""          # Twilio phone number for SMS (e.g. +1234567890)
 
     # --- nomba ---
     nomba_base_url: str = "https://sandbox.nomba.com"

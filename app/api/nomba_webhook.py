@@ -227,7 +227,7 @@ async def _send_receipts(debt_id: str, fully_paid: bool) -> None:
                         f"Wallet don credit with {amt}.")
 
     try:
-        await wa.send_text(debtor.get("phone_normalized", debtor.get("phone", "")), debtor_msg)
+        await wa.send_sms(debtor.get("phone_normalized", debtor.get("phone", "")), debtor_msg)
     except Exception:
         log.exception("debtor receipt failed")
     try:

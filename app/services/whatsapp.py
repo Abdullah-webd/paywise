@@ -64,6 +64,20 @@ class WhatsAppSender:
         )
         log.info("WA text → %s: %s", to_phone, body[:80])
 
+    async def send_sms(self, to_phone: str, body: str) -> None:
+        """Send a plain SMS via Twilio — no sandbox restrictions like WhatsApp."""
+        if not settings.twilio_sms_from:
+            log.error("twilio_sms_from not configured, cannot send SMS")
+            return
+        p = (to_phone or "").strip()
+        if not p.startswith("+"):
+            p = f"+{p.lstrip('+')}"
+        await asyncio.to_thread(
+            self._client.messages.create,
+            from_=settings.twilio_sms_from, to=p, body=body
+        )
+        log.info("SMS → %s: %s", p, body[:80])
+
     async def send_audio(self, to_phone: str, wav_bytes: bytes, ext: str = ".wav") -> None:
         """Publish the WAV and send it as a WhatsApp voice note.
 

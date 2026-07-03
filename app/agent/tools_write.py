@@ -544,7 +544,7 @@ async def commit_create_collection_account(params: dict) -> dict:
         bank=acct.get("bank_name", "Nomba"),
         lang=merchant.get("preferred_lang", "pidgin"),
     )
-    await wa.send_text(debtor["phone_normalized"], msg)
+    await wa.send_sms(debtor["phone_normalized"], msg)
 
     return {
         "account_number": acct["account_number"],
