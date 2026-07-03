@@ -230,7 +230,7 @@ async def list_drafts(merchant_id: str) -> dict:
 # ------------------------------------------------------------------- nomba
 
 async def get_nomba_balance(merchant_id: str) -> dict:
-    """Fetch the live Nomba sub-account balance."""
+    """Fetch the live Nomba sub-account bank balance."""
     from app.services.nomba import nomba
     try:
         data = await nomba.get_sub_account_balance()
@@ -243,18 +243,189 @@ async def get_nomba_balance(merchant_id: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-async def get_nomba_transactions(merchant_id: str, page: int = 1, count: int = 5) -> dict:
-    """Fetch recent Nomba sub-account transactions (credits on the VA)."""
+async def get_nomba_transactions(merchant_id: str, page: int = 1, count: int = 10) -> dict:
+    """Fetch recent Nomba transactions AND match each one to a specific debt.
+
+    For every credit, the Nomba API returns `virtualAccountReference` which IS
+    our `debt.reference`. This function cross-references that to tell you:
+      - WHICH debt the payment is for (goods, amount owed)
+      - WHO the debtor is
+      - Whether the payment has already been settled in our ledger
+
+    If there are UNMATCHED payments (not yet recorded in our ledger), they are
+    AUTO-SETTLED here — no separate confirmation needed. The proof is in Nomba's
+    API response. This matches by virtualAccountReference → debt.reference, NOT
+    by sender name. So even if the sender name doesn't match the debtor name, we
+    still correctly identify which debt was paid.
+    """
     from app.services.nomba import nomba
+    db = get_db()
     try:
         data = await nomba.get_sub_account_transactions(page=page, size=count)
-        return {
-            "success": True,
-            "transactions": data["transactions"],
-            "count": data["count"],
-        }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+    enriched = []
+    auto_settled = []
+
+    for txn in data["transactions"]:
+        va_ref = txn.get("virtualAccountReference")
+        entry = {
+            **txn,
+            "matched_debt": None,
+            "already_settled": False,
+        }
+
+        if not va_ref:
+            enriched.append(entry)
+            continue
+
+        # --- match virtualAccountReference → debt.reference ---
+        debt = await db.debts.find_one({"reference": va_ref})
+        if not debt:
+            enriched.append(entry)
+            continue
+
+        # Get debtor info
+        debtor = None
+        if debt.get("debtor_id"):
+            debtor = await db.debtors.find_one({"_id": _oid(debt["debtor_id"])})
+
+        entry["matched_debt"] = {
+            "debt_id": str(debt["_id"]),
+            "reference": debt["reference"],
+            "debtor_name": (debtor or {}).get("name", "Unknown"),
+            "goods": debt.get("goods_description"),
+            "amount_owed": fmt_naira(debt["amount_kobo"]),
+            "amount_paid_before": fmt_naira(debt.get("paid_kobo", 0)),
+            "status": debt.get("status"),
+        }
+
+        # --- check if already settled ---
+        nomba_txn_id = txn.get("id")
+        already = await db.transactions.find_one({
+            "reference": nomba_txn_id,
+            "status": "SUCCESS",
+        }) if nomba_txn_id else None
+
+        if already:
+            entry["already_settled"] = True
+            enriched.append(entry)
+            continue
+
+        # --- AUTO-SETTLE: payment found, not yet recorded ---
+        amount_kobo = int(txn["amount"] * 100)
+        try:
+            settled = await _auto_settle_nomba_payment(
+                va_ref, nomba_txn_id, amount_kobo, str(debt["_id"]),
+                debt["merchant_id"],
+            )
+            if settled.get("settled"):
+                entry["already_settled"] = True
+                entry["matched_debt"]["amount_paid_after"] = fmt_naira(
+                    debt.get("paid_kobo", 0) + amount_kobo
+                )
+                auto_settled.append({
+                    "debt_id": str(debt["_id"]),
+                    "debtor": entry["matched_debt"]["debtor_name"],
+                    "amount": fmt_naira(amount_kobo),
+                    "fully_paid": settled.get("fully_paid", False),
+                })
+        except Exception as e:
+            entry["settle_error"] = str(e)
+
+        enriched.append(entry)
+
+    return {
+        "success": True,
+        "transactions": enriched,
+        "count": len(enriched),
+        "auto_settled": auto_settled,
+        "auto_settled_count": len(auto_settled),
+    }
+
+
+async def _auto_settle_nomba_payment(
+    alias_ref: str,
+    txn_ref: str,
+    amount_kobo: int,
+    debt_id: str,
+    merchant_id: str,
+) -> dict:
+    """Reuse the same settlement logic as the webhook — atomic Mongo transaction."""
+    from datetime import datetime, timezone
+    import json as _json
+    db = get_db()
+    import app.db as _db
+
+    async with await _db.client.start_session() as session:
+        async with session.start_transaction():
+            # Idempotency check
+            existing = await db.transactions.find_one(
+                {"reference": txn_ref, "status": "SUCCESS"}, session=session
+            )
+            if existing:
+                await session.abort_transaction()
+                return {"settled": False, "reason": "duplicate"}
+
+            debt = await db.debts.find_one({
+                "_id": _oid(debt_id),
+                "merchant_id": merchant_id,
+            }, session=session)
+            if not debt:
+                await session.abort_transaction()
+                return {"settled": False, "reason": "debt_not_found"}
+
+            debt_status = debt.get("status", "")
+            if debt_status in ("PAID", "CANCELLED", "EXPIRED"):
+                await session.abort_transaction()
+                return {"settled": False, "reason": f"debt_already_{debt_status}"}
+
+            outstanding = debt["amount_kobo"] - debt.get("paid_kobo", 0)
+            if amount_kobo > outstanding:
+                await session.abort_transaction()
+                return {"settled": False, "reason": "overpayment"}
+
+            # Insert transaction record
+            await db.transactions.insert_one({
+                "reference": txn_ref,
+                "debt_id": debt_id,
+                "merchant_id": merchant_id,
+                "amount_kobo": amount_kobo,
+                "currency": "NGN",
+                "status": "SUCCESS",
+                "source": "nomba_transaction_sync",
+                "created_at": datetime.now(timezone.utc),
+            }, session=session)
+
+            # Update debt
+            new_paid = debt.get("paid_kobo", 0) + amount_kobo
+            fully_paid = new_paid >= debt["amount_kobo"]
+            update = {"$set": {"paid_kobo": new_paid}}
+            if fully_paid:
+                update["$set"]["status"] = "PAID"
+                update["$set"]["settled_at"] = datetime.now(timezone.utc)
+                update["$set"]["collection_account.is_active"] = False
+            else:
+                update["$set"]["status"] = "PARTIAL"
+            await db.debts.update_one({"_id": debt["_id"]}, update, session=session)
+
+            if fully_paid:
+                await db.virtual_accounts.update_many(
+                    {"debt_id": debt_id, "is_active": True},
+                    {"$set": {"is_active": False, "closed_at": datetime.now(timezone.utc)}},
+                    session=session,
+                )
+
+            # Credit merchant wallet
+            await db.merchants.update_one(
+                {"_id": _oid(merchant_id)},
+                {"$inc": {"balance_kobo": amount_kobo}},
+                session=session,
+            )
+
+            await session.commit_transaction()
+            return {"settled": True, "fully_paid": fully_paid}
 
 
 async def get_merchant_login_details(phone: str) -> dict:

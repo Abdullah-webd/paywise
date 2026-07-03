@@ -167,12 +167,20 @@ _register(
     "get_nomba_transactions",
     {
         "name": "get_nomba_transactions",
-        "description": "Get recent Nomba transactions (who paid in, how much, when). Use when the merchant asks 'who don pay?', 'any payment enter?', 'show me my transactions', 'any alert?', or wants to see recent credits on their account.",
+        "description": (
+            "Get recent Nomba transactions AND auto-settle any unmatched payments. "
+            "Each Nomba transaction has a virtualAccountReference which IS the debt.reference, "
+            "so payments are matched to debts BY THE VA THEY PAID INTO — not by sender name. "
+            "If a payment hasn't been recorded in our ledger yet, it is AUTO-SETTLED "
+            "(debt marked paid, wallet credited, VA deactivated if fully paid). "
+            "Use when the merchant asks 'who don pay?', 'any payment enter?', "
+            "'show me my transactions', 'any alert?', or to check for new payments."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "merchant_id": {"type": "string"},
-                "count": {"type": "integer", "default": 5, "description": "How many recent transactions to fetch"},
+                "count": {"type": "integer", "default": 10, "description": "How many recent transactions to fetch"},
             },
             "required": ["merchant_id"],
         },
