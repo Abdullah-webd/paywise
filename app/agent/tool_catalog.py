@@ -360,6 +360,28 @@ _register(
     },
 )(tools_write.propose_set_reminder_preference)
 
+_register(
+    "propose_send_reminder",
+    {
+        "name": "propose_send_reminder",
+        "description": (
+            "Propose sending a payment reminder SMS to a debtor. "
+            "Use when the merchant says 'send am message', 'remind am to pay', "
+            "'tell am make e pay', 'send reminder', etc. "
+            "The merchant sees the message and confirms before it sends."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "merchant_id": {"type": "string"},
+                "debtor_id": {"type": "string"},
+                "debt_id": {"type": "string"},
+            },
+            "required": ["merchant_id", "debtor_id", "debt_id"],
+        },
+    },
+)(tools_write.propose_send_reminder)
+
 
 # ---------------------------------------------------- execution dispatcher
 

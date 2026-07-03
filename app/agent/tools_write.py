@@ -938,6 +938,99 @@ async def commit_set_reminder_preference(params: dict) -> dict:
             "reminders_enabled": params["reminders_enabled"]}
 
 
+# ============================================================ SEND REMINDER
+
+async def propose_send_reminder(
+    merchant_id: str,
+    debtor_id: str,
+    debt_id: str,
+) -> dict:
+    """Propose sending a payment reminder SMS to a debtor.
+
+    Looks up the debt and debtor, composes a reminder message in the
+    merchant's preferred language, and stashes it as a pending action.
+    The merchant sees the proposed message and confirms before it sends.
+    """
+    db = get_db()
+    debt = await db.debts.find_one({"_id": _oid(debt_id), "merchant_id": merchant_id})
+    if not debt:
+        return {"error": "debt_not_found",
+                "detail": f"No debt found with id={debt_id}. Call list_recent_debts first."}
+    debtor = await db.debtors.find_one({"_id": _oid(debtor_id)})
+    if not debtor:
+        return {"error": "debtor_not_found",
+                "detail": f"No debtor found with id={debtor_id}."}
+    merchant = await db.merchants.find_one({"_id": _oid(merchant_id)})
+
+    amount = fmt_naira(debt["amount_kobo"])
+    paid = fmt_naira(debt.get("paid_kobo", 0))
+    remaining = fmt_naira(debt["amount_kobo"] - debt.get("paid_kobo", 0))
+    goods = debt.get("goods_description", "your goods")
+    business = (merchant.get("business_name") or "Your supplier") if merchant else "Your supplier"
+    lang = (merchant.get("preferred_lang") or "pidgin") if merchant else "pidgin"
+
+    # Build message in the appropriate language
+    messages = {
+        "pidgin": (
+            f"Hello {debtor['name']}, na {business}. "
+            f"Dis na friendly reminder say your balance of {remaining} "
+            f"for {goods} still dey outstanding. Total amount na {amount}. "
+            f"Abeg make sure say you pay before the deadline. Thank you! 🙏"
+        ),
+        "yoruba": (
+            f"{debtor['name']}, ẹ kú àárọ̀. {business} ló ń kí yín. "
+            f"Ẹ jọ̀wọ́, ẹ jẹ́ ká rántí pé ẹ ṣì ní {remaining} láti san "
+            f"fún {goods}. Gbogbo owó náà jẹ́ {amount}. "
+            f"Ẹ jọ̀wọ́, ẹ san án kí àkókò tó parí. A dúpẹ́! 🙏"
+        ),
+        "igbo": (
+            f"Ndewo {debtor['name']}, ọ bụ {business}. "
+            f"I chetara gị na i ji ụgwọ {remaining} maka {goods}. "
+            f"Ngụkọta ụgwọ gị bụ {amount}. "
+            f"Biko gbaa mbọ kwụọ tupu oge agwụ. Daalụ! 🙏"
+        ),
+        "hausa": (
+            f"Sannu {debtor['name']}, daga {business}. "
+            f"Wannan tunatarwa ce cewa har yanzu kuna da bashin {remaining} "
+            f"na {goods}. Jimlar bashin ku {amount} ne. "
+            f"Don Allah ku biya kafin wa'adin ya kure. Na gode! 🙏"
+        ),
+        "english": (
+            f"Hello {debtor['name']}, this is {business}. "
+            f"Friendly reminder: your outstanding balance of {remaining} "
+            f"for {goods} is still due. Total amount: {amount}. "
+            f"Please make payment before the deadline. Thank you! 🙏"
+        ),
+    }
+    msg = messages.get(lang, messages["pidgin"])
+
+    return {
+        "action_type": "send_reminder",
+        "token": _token(),
+        "params": {
+            "merchant_id": merchant_id,
+            "debtor_id": debtor_id,
+            "debt_id": debt_id,
+            "message": msg,
+        },
+        "summary": f"Send dis reminder to {debtor['name']}: \"{msg[:100]}...\"",
+    }
+
+
+async def commit_send_reminder(params: dict) -> dict:
+    """Actually send the reminder SMS to the debtor."""
+    db = get_db()
+    from app.services.whatsapp import get_whatsapp
+    wa = get_whatsapp()
+
+    debtor = await db.debtors.find_one({"_id": _oid(params["debtor_id"])})
+    if not debtor:
+        return {"error": "debtor_not_found"}
+
+    await wa.send_sms(debtor["phone_normalized"], params["message"])
+    return {"sent": True, "debtor_name": debtor["name"]}
+
+
 # ============================================================ ACTION REGISTRY
 
 # Maps action_type -> commit function. The graph uses this to execute a
@@ -952,6 +1045,7 @@ COMMIT_REGISTRY = {
     "edit_debt":                   commit_edit_debt,
     "delete_debt":                 commit_delete_debt,
     "set_reminder_preference":     commit_set_reminder_preference,
+    "send_reminder":               commit_send_reminder,
 }
 
 

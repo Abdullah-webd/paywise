@@ -351,6 +351,10 @@ def _ack_for(action_type: str, result: dict) -> str:
     if action_type == "set_reminder_preference":
         state = "ON" if result.get("reminders_enabled") else "OFF"
         return f"Reminders don turn {state}. ✅"
+    if action_type == "send_reminder":
+        if result.get("sent"):
+            return f"I don send the reminder to {result.get('debtor_name', 'the debtor')}. ✅"
+        return "E no go through. " + str(result.get("error", "unknown error")) + "."
     return "Done ✅"
 
 
