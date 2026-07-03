@@ -269,19 +269,24 @@ async def get_nomba_transactions(merchant_id: str, page: int = 1, count: int = 1
     auto_settled = []
 
     for txn in data["transactions"]:
-        va_ref = txn.get("virtualAccountReference")
+        va_ref = txn.get("virtual_account_reference")
+        account_number = txn.get("recipient_account_number")
         entry = {
             **txn,
             "matched_debt": None,
             "already_settled": False,
         }
 
-        if not va_ref:
-            enriched.append(entry)
-            continue
+        # --- try matching by virtual_account_reference → debt.reference ---
+        debt = None
+        if va_ref:
+            debt = await db.debts.find_one({"reference": va_ref})
 
-        # --- match virtualAccountReference → debt.reference ---
-        debt = await db.debts.find_one({"reference": va_ref})
+        # --- fallback: match by recipient account number → virtual_accounts ---
+        if not debt and account_number:
+            va_doc = await db.virtual_accounts.find_one({"account_number": account_number})
+            if va_doc and va_doc.get("debt_id"):
+                debt = await db.debts.find_one({"_id": _oid(va_doc["debt_id"])})
         if not debt:
             enriched.append(entry)
             continue

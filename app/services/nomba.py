@@ -313,6 +313,8 @@ class NombaClient:
                 "narration": t.get("narration"),
                 "time_created": t.get("timeCreated"),
                 "wallet_balance": float(t.get("walletBalance", 0)),
+                "virtual_account_reference": t.get("virtualAccountReference"),
+                "recipient_account_number": t.get("recipientAccountNumber"),
             })
         return {
             "transactions": txns,
