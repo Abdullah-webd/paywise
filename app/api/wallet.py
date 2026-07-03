@@ -1,4 +1,4 @@
-"""Web wallet — auth + dashboard data + withdrawal.
+"""Web wallet — auth + dashboard + Nomba bank ops + withdrawal.
 
 Routes:
   Pages:   GET  /wallet/login    GET /wallet/dashboard    GET /wallet/logout
@@ -6,10 +6,9 @@ Routes:
   Data:    GET  /wallet/api/summary
            GET  /wallet/api/transactions
            GET  /wallet/api/debts
-           POST /wallet/api/withdraw
-
-Auth = signed cookie session (itsdangerous). Simple, no frontend framework.
-The merchant logs in with phone + the password the agent generated at onboarding.
+           GET  /wallet/api/banks          (Nomba bank list)
+           POST /wallet/api/account-lookup  (verify account number → name)
+           POST /wallet/api/withdraw        (transfer via Nomba)
 """
 from __future__ import annotations
 
@@ -24,16 +23,14 @@ from fastapi.templating import Jinja2Templates
 from app.config import settings
 from app.db import get_db
 from app.agent.tools_write import verify_password
-from app.services.nomba import nomba
+from app.services.nomba import nomba, NombaError
 from app.utils import normalize_phone, kobo_to_naira, fmt_naira, naira_to_kobo
 
 router = APIRouter(prefix="/wallet")
 log = logging.getLogger("paywise.wallet")
 
-# Templates live in app/templates/wallet
 templates = Jinja2Templates(directory="app/templates")
 
-# Signed-cookie session helper
 from itsdangerous import URLSafeSerializer, BadSignature
 _session = URLSafeSerializer(settings.app_base_url, salt="paywise-session")
 
@@ -52,7 +49,6 @@ def _read_session_cookie(cookie_value: str | None) -> str | None:
 
 
 async def _current_merchant(request: Request):
-    """Return the merchant doc for the logged-in user, or None."""
     mid = _read_session_cookie(request.cookies.get("pw_session"))
     if not mid:
         return None
@@ -65,7 +61,6 @@ async def _current_merchant(request: Request):
 @router.get("")
 @router.get("/")
 async def wallet_root(request: Request):
-    """Shortcut: logged in → dashboard, otherwise → login."""
     if await _current_merchant(request):
         return RedirectResponse("/wallet/dashboard", status_code=303)
     return RedirectResponse("/wallet/login", status_code=303)
@@ -73,7 +68,6 @@ async def wallet_root(request: Request):
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    # already logged in? bounce to dashboard
     if await _current_merchant(request):
         return RedirectResponse("/wallet/dashboard", status_code=303)
     return templates.TemplateResponse("wallet/login.html", {
@@ -131,11 +125,24 @@ async def api_summary(request: Request):
     open_debts = await db.debts.count_documents({"merchant_id": str(merchant["_id"]),
                                                  "status": {"$in": ["PENDING", "PARTIAL"]}})
 
+    # Fetch LIVE Nomba balance (real bank balance, not internal ledger)
+    live_balance_kobo = 0
+    live_balance_str = "₦0"
+    try:
+        bal = await nomba.get_sub_account_balance()
+        live_balance_kobo = int(bal["balance_naira"] * 100)
+        live_balance_str = fmt_naira(live_balance_kobo)
+    except Exception as e:
+        log.warning("Could not fetch live Nomba balance: %s", e)
+        live_balance_kobo = merchant.get("balance_kobo", 0)
+        live_balance_str = fmt_naira(live_balance_kobo)
+
     return {
         "name": merchant.get("name"),
         "business_name": merchant.get("business_name"),
-        "balance": fmt_naira(merchant.get("balance_kobo", 0)),
-        "balance_kobo": merchant.get("balance_kobo", 0),
+        "balance": live_balance_str,
+        "balance_kobo": live_balance_kobo,
+        "ledger_balance": fmt_naira(merchant.get("balance_kobo", 0)),
         "outstanding": fmt_naira(outstanding),
         "account_number": merchant.get("master_account_number"),
         "paid_count": paid_count,
@@ -189,75 +196,118 @@ async def api_debts(request: Request):
     return {"debts": out}
 
 
+@router.get("/api/banks")
+async def api_banks(request: Request):
+    merchant = await _current_merchant(request)
+    if not merchant:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    try:
+        banks = await nomba.get_banks()
+        return {"banks": banks}
+    except Exception as e:
+        log.exception("bank list fetch failed")
+        return JSONResponse({"error": str(e)}, status_code=502)
+
+
+@router.post("/api/account-lookup")
+async def api_account_lookup(request: Request):
+    merchant = await _current_merchant(request)
+    if not merchant:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    body = await request.json()
+    bank_code = body.get("bank_code", "").strip()
+    account_number = body.get("account_number", "").strip()
+    if not bank_code or not account_number:
+        return JSONResponse({"error": "bank_code and account_number required"}, status_code=400)
+    try:
+        result = await nomba.lookup_bank_account(bank_code, account_number)
+        return result
+    except NombaError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    except Exception as e:
+        log.exception("account lookup failed")
+        return JSONResponse({"error": str(e)}, status_code=502)
+
+
 @router.post("/api/withdraw")
-async def api_withdraw(request: Request,
-                       amount_naira: float = Form(...),
-                       bank_code: str = Form(...),
-                       account_number: str = Form(...),
-                       account_name: str = Form(...)):
+async def api_withdraw(request: Request):
     merchant = await _current_merchant(request)
     if not merchant:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    db = get_db()
-    amount_kobo = naira_to_kobo(amount_naira)
-    if amount_kobo <= 0:
+    body = await request.json()
+    amount_naira = float(body.get("amount_naira", 0))
+    bank_code = body.get("bank_code", "").strip()
+    account_number = body.get("account_number", "").strip()
+    account_name = body.get("account_name", "").strip()
+
+    if amount_naira <= 0:
         return JSONResponse({"error": "Amount must be greater than zero."}, status_code=400)
-    if amount_kobo > merchant.get("balance_kobo", 0):
-        return JSONResponse({"error": "Insufficient wallet balance."}, status_code=400)
+    if not bank_code or not account_number:
+        return JSONResponse({"error": "Bank code and account number required."}, status_code=400)
 
-    # insert a PENDING withdrawal first (idempotency anchor)
-    ref = secrets_token()
-    insert = await db.withdrawals.insert_one({
-        "reference": ref,
-        "merchant_id": str(merchant["_id"]),
-        "amount_kobo": amount_kobo,
-        "destination_bank_code": bank_code,
-        "destination_account_number": account_number,
-        "destination_account_name": account_name,
-        "status": "PENDING",
-        "created_at": datetime.now(timezone.utc),
-    })
-
-    # call Nomba transfer
+    # Get REAL Nomba balance, not internal ledger
     try:
-        result = await nomba.transfer(
+        live = await nomba.get_sub_account_balance()
+        live_balance_naira = live["balance_naira"]
+    except Exception:
+        return JSONResponse({"error": "Could not verify bank balance. Try again."}, status_code=502)
+
+    if amount_naira > live_balance_naira:
+        return JSONResponse({
+            "error": f"Insufficient balance. Your available bank balance is ₦{live_balance_naira:,.2f}."
+        }, status_code=400)
+
+    amount_kobo = int(amount_naira * 100)
+    ref = secrets_token()
+
+    # Step 1: Move from sub-account wallet to parent wallet
+    try:
+        wallet_result = await nomba.wallet_transfer(
+            amount_naira=amount_naira,
+            reference=f"w{ref}",
+        )
+    except Exception as e:
+        return JSONResponse({"error": f"Wallet transfer failed: {e}"}, status_code=502)
+
+    # Step 2: Bank transfer from parent account
+    try:
+        bank_result = await nomba.transfer(
             bank_code=bank_code,
             account_number=account_number,
             amount_naira=amount_naira,
             reference=ref,
         )
     except Exception as e:
-        await db.withdrawals.update_one({"_id": insert.inserted_id},
-                                        {"$set": {"status": "FAILED"}})
-        return JSONResponse({"error": f"Transfer failed: {e}"}, status_code=502)
+        # Wallet transfer already went through — log it, don't reverse (Nomba handles)
+        log.error("Bank transfer failed after wallet transfer: %s", e)
+        return JSONResponse({"error": f"Bank transfer failed: {e}. Wallet transfer reference: w{ref}"}, status_code=502)
 
-    # on success: debit wallet + mark withdrawal SUCCESS
-    async with await _client().start_session() as session:
-        async with session.start_transaction():
-            await db.merchants.update_one(
-                {"_id": merchant["_id"]},
-                {"$inc": {"balance_kobo": -amount_kobo}},
-                session=session,
-            )
-            await db.withdrawals.update_one(
-                {"_id": insert.inserted_id},
-                {"$set": {"status": "SUCCESS", "nomba_transfer_id": result.get("nomba_transfer_id")}},
-                session=session,
-            )
-            await session.commit_transaction()
+    # Record withdrawal in DB
+    db = get_db()
+    await db.withdrawals.insert_one({
+        "reference": ref,
+        "merchant_id": str(merchant["_id"]),
+        "amount_kobo": amount_kobo,
+        "destination_bank_code": bank_code,
+        "destination_account_number": account_number,
+        "destination_account_name": account_name,
+        "status": "SUCCESS",
+        "nomba_wallet_txn_id": wallet_result.get("nomba_transfer_id"),
+        "nomba_bank_txn_id": bank_result.get("nomba_transfer_id"),
+        "created_at": datetime.now(timezone.utc),
+    })
 
-    return {"status": "SUCCESS", "reference": ref,
-            "nomba_transfer_id": result.get("nomba_transfer_id")}
+    return {
+        "status": "SUCCESS",
+        "reference": ref,
+        "nomba_transfer_id": bank_result.get("nomba_transfer_id"),
+        "amount": fmt_naira(amount_kobo),
+    }
 
 
-# ---- tiny helpers (kept local to avoid circular imports) ----
+# ---- tiny helpers ----
 
 def secrets_token() -> str:
     import secrets as _s
     return _s.token_urlsafe(12)
-
-
-def _client():
-    from app.db import client
-    return client

@@ -176,6 +176,89 @@ class NombaClient:
 
     # ---------- transfers (withdrawals) -------------------------------
 
+    async def get_banks(self) -> list[dict[str, Any]]:
+        """Fetch list of supported banks and their codes.
+
+        GET /v1/transfers/banks
+        """
+        url = f"{self._base}/v1/transfers/banks"
+        headers = await self._headers()
+        try:
+            resp = await self._http.get(url, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error("Nomba banks fetch failed %s: %s", resp.status_code, resp.text)
+            raise NombaError(f"get_banks HTTP {resp.status_code}: {resp.text}") from e
+        except httpx.HTTPError as e:
+            raise NombaError(f"get_banks network error: {e}") from e
+
+        body = resp.json()
+        data = body.get("data", body)
+        banks = data if isinstance(data, list) else data.get("banks", data.get("results", []))
+        return [{"code": b.get("code"), "name": b.get("name")} for b in banks]
+
+    async def lookup_bank_account(self, bank_code: str, account_number: str) -> dict[str, Any]:
+        """Verify a bank account number and return the account name.
+
+        POST /v1/transfers/bank/lookup
+        """
+        url = f"{self._base}/v1/transfers/bank/lookup"
+        headers = await self._headers()
+        payload = {"bankCode": bank_code, "accountNumber": account_number}
+        try:
+            resp = await self._http.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error("Nomba account lookup failed %s: %s", resp.status_code, resp.text)
+            raise NombaError(f"lookup_bank_account HTTP {resp.status_code}: {resp.text}") from e
+        except httpx.HTTPError as e:
+            raise NombaError(f"lookup_bank_account network error: {e}") from e
+
+        body = resp.json()
+        data = body.get("data", body)
+        return {
+            "account_name": data.get("accountName") or data.get("account_name") or "",
+            "account_number": data.get("accountNumber") or account_number,
+            "bank_code": bank_code,
+        }
+
+    async def wallet_transfer(
+        self,
+        amount_naira: float,
+        reference: str,
+    ) -> dict[str, Any]:
+        """Transfer money from sub-account wallet to the parent account.
+
+        POST /v2/transfers/wallet/{subAccountId}
+        Moves money from sub-account wallet into the parent wallet.
+        Use this as the first step before bank transfer (wallet → parent → bank).
+        """
+        sub_id = settings.nomba_sub_account_id
+        url = f"{self._base}/v2/transfers/wallet/{sub_id}"
+        payload = {
+            "amount": round(float(amount_naira), 2),
+            "currency": "NGN",
+            "reference": reference,
+        }
+        headers = await self._headers(idempotency_key=reference)
+        try:
+            resp = await self._http.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error("Nomba wallet transfer failed %s: %s", resp.status_code, resp.text)
+            raise NombaError(f"wallet_transfer HTTP {resp.status_code}: {resp.text}") from e
+        except httpx.HTTPError as e:
+            raise NombaError(f"wallet_transfer network error: {e}") from e
+
+        body = resp.json()
+        data = body.get("data", body)
+        return {
+            "nomba_transfer_id": data.get("transactionId") or data.get("id"),
+            "status": data.get("status"),
+            "amount_naira": float(data.get("amount", amount_naira)),
+            "reference": reference,
+        }
+
     async def transfer(
         self,
         bank_code: str,

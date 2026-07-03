@@ -233,28 +233,37 @@
   <div class="modal-bg" id="modal">
     <div class="modal">
       <h2>Withdraw to bank</h2>
-      <p class="sub">Move your wallet balance to any Nigerian bank account.</p>
+      <p class="sub">Cash out to any Nigerian bank. Nomba verifies the account.</p>
       <div class="balance-avail">Available balance: <b id="modal-bal">₦0</b></div>
       <form id="withdraw-form">
         <div class="field" style="margin-bottom:14px;">
           <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Amount (₦)</label>
-          <input type="number" name="amount_naira" id="w-amount" placeholder="5000" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
+          <input type="number" name="amount_naira" id="w-amount" placeholder="5000" required
+            style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
         </div>
         <div class="field" style="margin-bottom:14px;">
-          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Bank code</label>
-          <input type="text" name="bank_code" placeholder="e.g. 058 (GTBank)" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Bank</label>
+          <select name="bank_code" id="w-bank" required
+            style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;background:#fff;">
+            <option value="">— Select bank —</option>
+          </select>
         </div>
-        <div class="row">
-          <div class="field" style="margin-bottom:14px;">
-            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Account number</label>
-            <input type="text" name="account_number" placeholder="0123456789" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
-          </div>
-          <div class="field" style="margin-bottom:18px;">
-            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Account name</label>
-            <input type="text" name="account_name" placeholder="Tunde Bello" required style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;">
-          </div>
+        <div class="field" style="margin-bottom:14px;">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Account number</label>
+          <input type="text" name="account_number" id="w-acct" placeholder="10-digit NUBAN" required maxlength="10"
+            style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;"
+            oninput="this.value=this.value.replace(/\\D/g,'')">
+          <div id="w-lookup-status" style="font-size:12px;margin-top:4px;"></div>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,var(--green-500),var(--green-700));color:#fff;">Confirm withdrawal</button>
+        <div class="field" style="margin-bottom:18px;">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Account name <span style="color:var(--muted);font-weight:400;">(auto-verified)</span></label>
+          <input type="text" name="account_name" id="w-name" placeholder="Will be verified by Nomba" readonly
+            style="width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;background:var(--bg);">
+        </div>
+        <button type="submit" class="btn btn-primary" id="w-submit" disabled
+          style="width:100%;background:linear-gradient(135deg,var(--green-500),var(--green-700));color:#fff;opacity:0.5;">
+          Verify account first
+        </button>
         <button type="button" onclick="closeWithdraw()" class="btn" style="width:100%;margin-top:8px;background:var(--bg);color:var(--muted);">Cancel</button>
       </form>
     </div>
@@ -264,6 +273,7 @@
 
 <script>
 let currentBalance = 0;
+let banksLoaded = false;
 
 async function load() {
   const [s, t, d] = await Promise.all([
@@ -315,6 +325,78 @@ async function load() {
   }
 }
 
+async function loadBanks() {
+  if (banksLoaded) return;
+  try {
+    const r = await fetch('/wallet/api/banks');
+    const j = await r.json();
+    if (j.banks && j.banks.length) {
+      const sel = document.getElementById('w-bank');
+      j.banks.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.code;
+        opt.textContent = b.name + (b.code ? ' (' + b.code + ')' : '');
+        sel.appendChild(opt);
+      });
+      banksLoaded = true;
+    }
+  } catch(e) { console.error('bank load failed', e); }
+}
+
+let lookupTimer = null;
+let accountVerified = false;
+let verifiedAccountName = '';
+
+async function doLookup() {
+  const bank = document.getElementById('w-bank').value;
+  const acct = document.getElementById('w-acct').value;
+  const status = document.getElementById('w-lookup-status');
+  const nameInput = document.getElementById('w-name');
+  const submitBtn = document.getElementById('w-submit');
+
+  if (acct.length !== 10 || !bank) {
+    status.innerHTML = '';
+    nameInput.value = '';
+    nameInput.style.borderColor = 'var(--line)';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verify account first';
+    submitBtn.style.opacity = '0.5';
+    accountVerified = false;
+    return;
+  }
+
+  status.innerHTML = '<span style="color:var(--amber);">Verifying...</span>';
+  try {
+    const r = await fetch('/wallet/api/account-lookup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({bank_code: bank, account_number: acct})
+    });
+    const j = await r.json();
+    if (j.account_name) {
+      verifiedAccountName = j.account_name;
+      nameInput.value = j.account_name;
+      nameInput.style.borderColor = 'var(--green-500)';
+      status.innerHTML = '<span style="color:var(--green-700);">✅ Account verified by Nomba</span>';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirm withdrawal';
+      submitBtn.style.opacity = '1';
+      accountVerified = true;
+    } else {
+      nameInput.value = '';
+      nameInput.style.borderColor = 'var(--danger)';
+      status.innerHTML = '<span style="color:var(--danger);">❌ ' + esc(j.error || 'Could not verify account') + '</span>';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verify account first';
+      submitBtn.style.opacity = '0.5';
+      accountVerified = false;
+    }
+  } catch(e) {
+    status.innerHTML = '<span style="color:var(--danger);">Network error</span>';
+    accountVerified = false;
+  }
+}
+
 function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
 
 function switchTab(btn, panel) {
@@ -324,30 +406,74 @@ function switchTab(btn, panel) {
   document.getElementById('debts-panel').style.display = panel === 'debts' ? '' : 'none';
 }
 
-function openWithdraw() { document.getElementById('modal').classList.add('open'); }
-function closeWithdraw() { document.getElementById('modal').classList.remove('open'); }
+function openWithdraw() {
+  loadBanks();
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeWithdraw() {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('withdraw-form').reset();
+  document.getElementById('w-lookup-status').innerHTML = '';
+  document.getElementById('w-name').value = '';
+  document.getElementById('w-name').style.borderColor = 'var(--line)';
+  document.getElementById('w-submit').disabled = true;
+  document.getElementById('w-submit').textContent = 'Verify account first';
+  document.getElementById('w-submit').style.opacity = '0.5';
+  accountVerified = false;
+}
+
+document.getElementById('w-acct').addEventListener('input', () => {
+  clearTimeout(lookupTimer);
+  accountVerified = false;
+  if (document.getElementById('w-acct').value.length === 10 && document.getElementById('w-bank').value) {
+    lookupTimer = setTimeout(doLookup, 800);
+  }
+});
+
+document.getElementById('w-bank').addEventListener('change', () => {
+  document.getElementById('w-acct').dispatchEvent(new Event('input'));
+});
 
 document.getElementById('withdraw-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const fd = new FormData(e.target);
+  const amount = document.getElementById('w-amount').value;
+  const bank = document.getElementById('w-bank').value;
+  const acct = document.getElementById('w-acct').value;
+  const name = verifiedAccountName;
+
+  if (!accountVerified) {
+    toast('Please verify the account number first', 'error');
+    return;
+  }
+
   try {
-    const r = await fetch('/wallet/api/withdraw', { method: 'POST', body: fd });
+    const r = await fetch('/wallet/api/withdraw', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        amount_naira: parseFloat(amount),
+        bank_code: bank,
+        account_number: acct,
+        account_name: name,
+      })
+    });
     const j = await r.json();
     if (!r.ok) { toast(j.error || 'Withdrawal failed', 'error'); return; }
-    toast('✅ Withdrawal sent successfully!', 'success');
-    closeWithdraw(); e.target.reset(); load();
+    toast('✅ ₦' + parseFloat(amount).toLocaleString() + ' sent to ' + name + '!', 'success');
+    closeWithdraw(); load();
   } catch (err) { toast('Network error', 'error'); }
 });
 
 function toast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast show ' + (type||'');
-  setTimeout(() => t.className = 'toast', 3500);
+  setTimeout(() => t.className = 'toast', 4000);
 }
 function refresh() { load(); toast('Updated'); }
 
 load();
-setInterval(load, 30000);  // auto-refresh every 30s
+setInterval(load, 60000);  // auto-refresh every 60s
 </script>
 </body>
 </html>
