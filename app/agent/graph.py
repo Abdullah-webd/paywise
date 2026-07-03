@@ -353,7 +353,12 @@ def _ack_for(action_type: str, result: dict) -> str:
         return f"Reminders don turn {state}. ✅"
     if action_type == "send_reminder":
         if result.get("sent"):
-            return f"I don send the reminder to {result.get('debtor_name', 'the debtor')}. ✅"
+            link = result.get("whatsapp_link", "")
+            return (
+                f"I don prepare the message for {result.get('debtor_name', 'the debtor')}. ✅\n\n"
+                f"Click dis link to send am:\n{link}\n\n"
+                f"E go open WhatsApp with the message already typed. Just tap Send."
+            )
         return "E no go through. " + str(result.get("error", "unknown error")) + "."
     return "Done ✅"
 

@@ -1013,22 +1013,34 @@ async def propose_send_reminder(
             "debt_id": debt_id,
             "message": msg,
         },
-        "summary": f"Send dis reminder to {debtor['name']}: \"{msg[:100]}...\"",
+        "summary": f"Prepare a WhatsApp reminder for {debtor['name']}. The merchant go get a link wey dem fit click to send am.",
     }
 
 
 async def commit_send_reminder(params: dict) -> dict:
-    """Actually send the reminder SMS to the debtor."""
-    db = get_db()
-    from app.services.whatsapp import get_whatsapp
-    wa = get_whatsapp()
+    """Generate a WhatsApp click-to-chat link with the reminder message pre-filled.
 
+    The merchant clicks the link, it opens WhatsApp to the debtor's chat with the
+    message already typed. They just hit Send. No SMS needed, works on any plan.
+    """
+    from urllib.parse import quote
+
+    db = get_db()
     debtor = await db.debtors.find_one({"_id": _oid(params["debtor_id"])})
     if not debtor:
         return {"error": "debtor_not_found"}
 
-    await wa.send_sms(debtor["phone_normalized"], params["message"])
-    return {"sent": True, "debtor_name": debtor["name"]}
+    phone = debtor["phone_normalized"]
+    # Normalise to international format without + for wa.me links
+    clean = phone.lstrip("+")
+    msg_encoded = quote(params["message"], safe="")
+    wa_link = f"https://wa.me/{clean}?text={msg_encoded}"
+
+    return {
+        "sent": True,
+        "debtor_name": debtor["name"],
+        "whatsapp_link": wa_link,
+    }
 
 
 # ============================================================ ACTION REGISTRY

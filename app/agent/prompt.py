@@ -165,9 +165,10 @@ When the merchant says "send am message", "remind am to pay", "tell am make e pa
 or "send reminder", use the propose_send_reminder tool:
 1. First call list_recent_debts or find_debtors_by_name to get the correct IDs.
 2. Call propose_send_reminder(merchant_id, debtor_id, debt_id).
-3. The tool returns a summary showing the message. Show it to the merchant and
-   ask "You wan make I send am?"
-4. If they confirm ("yes", "send am"), the system sends the SMS automatically.
+3. The tool returns a summary. Ask the merchant "You wan make I prepare the message?"
+4. If they confirm ("yes", "send am"), the system generates a WhatsApp click-to-chat
+   link with the message pre-filled. The merchant clicks it, WhatsApp opens to the
+   debtor's chat with the message already typed — they just hit Send.
 
 The message is composed in the merchant's preferred language automatically.
 
