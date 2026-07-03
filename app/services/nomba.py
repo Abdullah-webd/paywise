@@ -301,35 +301,34 @@ def verify_nomba_webhook_signature(
     type_: Optional[str],
     time: Optional[str],
     response_code: Optional[str],
-    timestamp: Optional[str],
+    nomba_timestamp: Optional[str],
 ) -> bool:
-    """Verify a Nomba webhook the way their docs prescribe.
+    """Verify a Nomba webhook using the hackathon shared key.
 
-    The signed string is the colon-joined fields, in this exact order:
+    The signed string is colon-joined in this exact order:
         event_type : requestId : userId : walletId : transactionId
-        : type : time : responseCode : timestamp
+        : type : time : responseCode : nomba-timestamp
 
-    Algorithm: HMAC-SHA256(secret, signed_string) → base64.
-    Compared constant-time against the `nomba-signature` header value.
-
-    Any field absent from the payload is rendered as the empty string, which
-    matches Nomba's own behaviour when signing.
+    Key: b"NombaHackathon2026" (from hackathon organisers).
+    Algorithm: HMAC-SHA256 → base64, compared constant-time.
     """
     if not signature_header:
         return False
 
+    import base64
+    import hmac
+    import hashlib
+
+    KEY = b"NombaHackathon2026"
+
     parts = [
         event_type, request_id, user_id, wallet_id, transaction_id,
-        type_, time, response_code, timestamp,
+        type_, time, response_code, nomba_timestamp,
     ]
     signed_string = ":".join(_stringify(p) for p in parts)
 
     expected = base64.b64encode(
-        hmac.new(
-            settings.nomba_webhook_secret.encode(),
-            signed_string.encode(),
-            hashlib.sha256,
-        ).digest()
+        hmac.new(KEY, signed_string.encode(), hashlib.sha256).digest()
     ).decode()
 
     return hmac.compare_digest(expected, signature_header.strip())

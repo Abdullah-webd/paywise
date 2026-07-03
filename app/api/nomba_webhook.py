@@ -35,7 +35,8 @@ log = logging.getLogger("paywise.nomba_webhook")
 async def nomba_webhook(
     request: Request,
     bg: BackgroundTasks,
-    nomba_signature: str | None = Header(default=None),
+    nomba_signature: str | None = Header(default=None, alias="nomba-signature"),
+    nomba_timestamp: str | None = Header(default=None, alias="nomba-timestamp"),
 ):
     raw = await request.body()
     try:
@@ -58,14 +59,15 @@ async def nomba_webhook(
     type_       = txn.get("type") or payload.get("type")
     time_field  = str(txn.get("time") or payload.get("time") or "")
     resp_code   = str(txn.get("responseCode") or payload.get("responseCode") or "")
-    timestamp   = str(payload.get("timestamp") or "")
+    # timestamp comes from nomba-timestamp HEADER, not body (hackathon spec)
+    n_timestamp = str(nomba_timestamp or payload.get("timestamp") or "")
 
     # 2) ------- verify signature -------
     ok = verify_nomba_webhook_signature(
         signature_header=nomba_signature,
         event_type=event_type, request_id=request_id, user_id=user_id,
         wallet_id=wallet_id, transaction_id=txn_id, type_=type_,
-        time=time_field, response_code=resp_code, timestamp=timestamp,
+        time=time_field, response_code=resp_code, nomba_timestamp=n_timestamp,
     )
     if not ok:
         log.warning("Nomba signature INVALID — rejecting")
