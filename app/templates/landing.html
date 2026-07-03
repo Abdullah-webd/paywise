@@ -9,20 +9,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #030712;
-    --surface: #0a0f1e;
-    --surface-2: #111827;
-    --border: #1e293b;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --green: #10b981;
-    --green-glow: rgba(16, 185, 129, 0.25);
-    --green-bright: #34d399;
-    --amber: #f59e0b;
-    --amber-glow: rgba(245, 158, 11, 0.2);
-    --blue: #3b82f6;
-    --rose: #f43f5e;
-    --violet: #8b5cf6;
+    --green-900: #064e3b; --green-800: #065f46; --green-700: #047857;
+    --green-600: #059669; --green-500: #10b981; --green-400: #34d399;
+    --green-200: #a7f3d0; --green-100: #d1fae5; --green-50: #ecfdf5;
+    --amber-500: #f59e0b; --amber-50: #fffbeb;
+    --ink: #0f172a; --ink-700: #334155; --muted: #64748b; --light: #94a3b8;
+    --line: #e2e8f0; --bg: #ffffff; --bg-soft: #f8fafc; --bg-green: #f0fdf4;
+    --radius: 16px;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,179 +23,228 @@
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background: var(--bg);
-    color: var(--text);
+    color: var(--ink);
     line-height: 1.7;
     overflow-x: hidden;
   }
 
-  /* ── Ambient background ── */
-  .bg-ambient {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(16,185,129,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(139,92,246,0.05) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 50% at 50% 50%, rgba(59,130,246,0.04) 0%, transparent 70%);
-  }
-
-  /* ── Grid pattern overlay ── */
-  .grid-pattern {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.03;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-
-  /* ── Nav ── */
+  /* ── NAV ── */
   .nav {
     position: fixed; top: 0; width: 100%; z-index: 100;
-    background: rgba(3,7,18,0.85); backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
   }
   .nav-inner {
     max-width: 1200px; margin: 0 auto; padding: 16px 24px;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--green); text-decoration: none; letter-spacing: -0.02em; }
-  .nav-logo img { height: 30px; vertical-align: middle; margin-right: 6px; }
+  .nav-logo {
+    font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; font-weight: 700;
+    color: var(--green-800); text-decoration: none; letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-logo img { height: 28px; }
   .nav-btn {
     padding: 10px 22px; border-radius: 10px; font-weight: 600; font-size: 0.88rem;
-    text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; font-family: inherit;
-    background: rgba(16,185,129,0.12); color: var(--green-bright); border: 1px solid rgba(16,185,129,0.2);
+    text-decoration: none; transition: all 0.2s; font-family: inherit;
+    background: var(--green-700); color: #fff;
   }
-  .nav-btn:hover { background: rgba(16,185,129,0.2); }
+  .nav-btn:hover { background: var(--green-800); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(4,120,87,0.25); }
 
-  /* ── Sections ── */
+  /* ── LAYOUT ── */
   .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
-  section { padding: 100px 0; position: relative; z-index: 1; }
+  section { padding: 100px 0; }
+
+  .section-tag {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--green-700); margin-bottom: 16px;
+  }
+  .section-h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 700;
+    letter-spacing: -0.02em; margin-bottom: 16px; line-height: 1.2;
+  }
+  .section-p { color: var(--muted); font-size: 1.05rem; max-width: 600px; }
 
   /* ── HERO ── */
-  .hero { padding: 160px 0 80px; text-align: center; }
-  .hero-pre { display: inline-block; padding: 6px 18px; border-radius: 100px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--green-bright); font-size: 0.85rem; font-weight: 600; margin-bottom: 32px; letter-spacing: 0.02em; }
-  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 24px; }
-  .hero h1 .gr { background: linear-gradient(135deg, var(--green-bright), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .hero p { font-size: 1.15rem; color: var(--muted); max-width: 620px; margin: 0 auto 40px; line-height: 1.7; }
+  .hero {
+    padding: 160px 0 80px; text-align: center;
+    background: linear-gradient(180deg, var(--bg-green) 0%, var(--bg) 100%);
+  }
+  .hero-pre {
+    display: inline-block; padding: 6px 18px; border-radius: 100px;
+    background: var(--green-100); color: var(--green-700);
+    font-size: 0.85rem; font-weight: 600; margin-bottom: 32px; letter-spacing: 0.02em;
+  }
+  .hero h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.2rem); font-weight: 800;
+    line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 24px; color: var(--ink);
+  }
+  .hero h1 .gr {
+    background: linear-gradient(135deg, var(--green-600), var(--green-500));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero p { font-size: 1.15rem; color: var(--muted); max-width: 620px; margin: 0 auto 40px; }
   .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-
   .btn {
-    display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 12px;
-    font-weight: 600; font-size: 0.95rem; text-decoration: none; transition: all 0.25s;
-    cursor: pointer; border: none; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px;
+    border-radius: 12px; font-weight: 600; font-size: 0.95rem;
+    text-decoration: none; transition: all 0.25s; cursor: pointer; border: none; font-family: inherit;
   }
   .btn-green {
-    background: var(--green); color: #000;
-    box-shadow: 0 0 30px var(--green-glow);
+    background: var(--green-700); color: #fff;
+    box-shadow: 0 4px 24px rgba(4,120,87,0.2);
   }
-  .btn-green:hover { transform: translateY(-2px); box-shadow: 0 0 50px var(--green-glow); }
+  .btn-green:hover { background: var(--green-800); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(4,120,87,0.3); }
   .btn-outline {
-    background: transparent; color: var(--text); border: 1px solid var(--border);
+    background: transparent; color: var(--green-700); border: 2px solid var(--green-500);
   }
-  .btn-outline:hover { border-color: var(--green); color: var(--green-bright); }
+  .btn-outline:hover { background: var(--green-50); }
 
   /* ── STAT CARDS ── */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 56px; }
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px;
-    text-align: center; transition: border-color 0.3s;
+  #problem { background: var(--green-900); color: #fff; }
+  #problem .section-tag { color: var(--green-400); }
+  #problem .section-p { color: var(--green-100); }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px; margin-top: 56px;
   }
-  .stat-card:hover { border-color: var(--green); }
-  .stat-num { font-family: 'Space Grotesk', sans-serif; font-size: 2.6rem; font-weight: 800; background: linear-gradient(135deg, var(--green-bright), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.1; }
-  .stat-label { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
-  .stat-src { color: rgba(148,163,184,0.4); font-size: 0.72rem; margin-top: 6px; }
-
-  /* ── PROBLEM NARRATIVE ── */
-  .narrative { text-align: center; }
-  .section-tag { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--green-bright); margin-bottom: 16px; }
-  .section-h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 18px; }
-  .section-p { color: var(--muted); font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
+  .stat-card {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius); padding: 28px; text-align: center;
+    backdrop-filter: blur(8px); transition: border-color 0.3s;
+  }
+  .stat-card:hover { border-color: var(--green-400); }
+  .stat-num {
+    font-family: 'Space Grotesk', sans-serif; font-size: 2.6rem; font-weight: 800;
+    color: var(--green-400); line-height: 1.1;
+  }
+  .stat-label { color: var(--green-100); font-size: 0.9rem; margin-top: 8px; }
+  .stat-src { color: rgba(167,243,208,0.45); font-size: 0.72rem; margin-top: 6px; }
 
   /* ── STORY CARD ── */
   .story-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 20px;
     padding: 48px; margin-top: 48px; position: relative; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
   }
   .story-card::before {
-    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-    background: linear-gradient(90deg, var(--green), var(--blue), var(--violet));
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+    background: linear-gradient(90deg, var(--green-500), var(--green-400), var(--amber-500));
   }
-  .story-card p { font-size: 1.1rem; color: var(--muted); max-width: 700px; margin: 0 auto; line-height: 1.8; }
-  .story-card .highlight { color: var(--rose); font-weight: 600; }
-  .story-card .highlight-green { color: var(--green-bright); font-weight: 600; }
+  .story-card p { font-size: 1.1rem; color: var(--ink-700); max-width: 700px; margin: 0 auto; line-height: 1.85; }
+  .story-card .highlight { color: #dc2626; font-weight: 600; }
+  .story-card .highlight-green { color: var(--green-700); font-weight: 600; }
 
   /* ── STEPS ── */
-  .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; margin-top: 48px; }
-  .step {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 28px;
-    position: relative; transition: border-color 0.3s, transform 0.3s;
+  .steps-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 28px; margin-top: 48px;
   }
-  .step:hover { border-color: var(--green); transform: translateY(-4px); }
-  .step-num { font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--green-bright); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 16px; }
-  .step-emoji { font-size: 2rem; margin-bottom: 16px; }
-  .step h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+  .step {
+    background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 32px 28px; position: relative;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  }
+  .step:hover {
+    border-color: var(--green-400); transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(4,120,87,0.08);
+  }
+  .step-num {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem; font-weight: 700;
+    color: var(--green-600); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 16px;
+  }
+  .step-emoji { font-size: 2rem; margin-bottom: 14px; }
+  .step h3 {
+    font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;
+  }
   .step p { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
 
-  /* ── TRY IT SECTION ── */
-  .try-section { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 56px; margin-top: 48px; text-align: center; }
-  .try-section h2 { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-bottom: 8px; }
-  .try-section .sub { color: var(--muted); font-size: 1rem; margin-bottom: 40px; }
-  .try-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; text-align: left; }
-  @media (max-width: 768px) { .try-grid { grid-template-columns: 1fr; } .try-grid > div:first-child { order: 2; } .try-grid > div:last-child { order: 1; } }
+  /* ── TRY IT ── */
+  .try-section {
+    background: var(--bg-green); border: 1px solid var(--green-200);
+    border-radius: 24px; padding: 56px; margin-top: 48px;
+    box-shadow: 0 4px 32px rgba(4,120,87,0.06);
+  }
+  .try-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+  }
+  @media (max-width: 768px) {
+    .try-grid { grid-template-columns: 1fr; }
+    .try-grid > div:first-child { order: 2; }
+    .try-grid > div:last-child { order: 1; }
+  }
   .qr-box {
     display: flex; flex-direction: column; align-items: center;
     background: #fff; border-radius: 20px; padding: 28px; text-align: center;
+    border: 2px dashed var(--green-200);
   }
   .qr-box img { width: 160px; height: 160px; }
-  .qr-box .qr-label { color: #0f172a; font-weight: 700; font-size: 0.9rem; margin-top: 12px; }
-  .qr-box .qr-code-text { color: #64748b; font-size: 0.78rem; margin-top: 4px; font-family: monospace; }
+  .qr-box .qr-label {
+    color: var(--ink); font-weight: 700; font-size: 0.9rem; margin-top: 12px;
+  }
+  .qr-box .qr-code-text {
+    color: var(--muted); font-size: 0.78rem; margin-top: 4px; font-family: monospace;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.3); }
+    70% { box-shadow: 0 0 0 18px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+  .qr-box { animation: pulse-ring 2.5s infinite; }
+
   .try-steps { list-style: none; }
   .try-steps li {
-    display: flex; gap: 16px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 16px 0; border-bottom: 1px solid var(--green-100);
   }
   .try-steps li:last-child { border: none; }
   .try-steps .ts-num {
-    width: 36px; height: 36px; border-radius: 10px; background: rgba(16,185,129,0.12);
-    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: var(--green-bright);
-    flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 10px; background: var(--green-100);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.88rem; color: var(--green-700); flex-shrink: 0;
   }
   .try-steps .ts-content h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
   .try-steps .ts-content p { color: var(--muted); font-size: 0.85rem; }
 
   /* ── TECH ── */
-  .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 40px; }
-  .tech-item {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 20px; text-align: center; font-size: 0.88rem; font-weight: 600; color: var(--muted);
-    transition: border-color 0.3s, color 0.3s;
+  .tech-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-top: 40px;
   }
-  .tech-item:hover { border-color: var(--green); color: var(--text); }
+  .tech-item {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px; text-align: center; font-size: 0.88rem; font-weight: 600;
+    color: var(--ink-700); transition: border-color 0.3s, color 0.3s, box-shadow 0.3s;
+  }
+  .tech-item:hover { border-color: var(--green-500); color: var(--green-700); box-shadow: 0 4px 16px rgba(4,120,87,0.06); }
 
   /* ── CTA ── */
-  .cta-section { text-align: center; padding: 80px 0; }
-  .cta-section .glow {
-    display: inline-flex; align-items: center; gap: 8px; padding: 14px 40px; border-radius: 14px;
-    background: var(--green); color: #000; font-weight: 700; font-size: 1rem; text-decoration: none;
-    box-shadow: 0 0 60px var(--green-glow); transition: all 0.3s;
+  .cta-section {
+    text-align: center; padding: 80px 0;
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-green) 100%);
   }
-  .cta-section .glow:hover { box-shadow: 0 0 100px var(--green-glow); transform: translateY(-3px); }
+  .cta-link {
+    display: inline-flex; align-items: center; gap: 8px; padding: 16px 44px;
+    border-radius: 14px; background: var(--green-700); color: #fff;
+    font-weight: 700; font-size: 1.05rem; text-decoration: none;
+    box-shadow: 0 4px 32px rgba(4,120,87,0.25); transition: all 0.3s;
+  }
+  .cta-link:hover { background: var(--green-800); transform: translateY(-3px); box-shadow: 0 8px 48px rgba(4,120,87,0.35); }
 
   /* ── FOOTER ── */
-  footer { border-top: 1px solid var(--border); padding: 40px 24px; text-align: center; color: rgba(148,163,184,0.5); font-size: 0.82rem; }
+  footer {
+    border-top: 1px solid var(--line); padding: 40px 24px;
+    text-align: center; color: var(--light); font-size: 0.82rem;
+  }
 
-  /* ── Animations ── */
+  /* ── ANIMATIONS ── */
   @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
   .anim { animation: fadeUp 0.7s ease-out both; }
   .anim-d1 { animation-delay: 0.1s; }
   .anim-d2 { animation-delay: 0.2s; }
   .anim-d3 { animation-delay: 0.3s; }
-  .anim-d4 { animation-delay: 0.4s; }
-
-  /* ── Pulse ring for QR ── */
-  @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
-    70% { box-shadow: 0 0 0 18px rgba(16,185,129,0); }
-    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
-  }
-  .qr-box { animation: pulse-ring 2.5s infinite; }
 
   @media (max-width: 768px) {
     .hero { padding: 120px 0 60px; }
@@ -215,21 +257,17 @@
 </head>
 <body>
 
-<div class="bg-ambient"></div>
-<div class="grid-pattern"></div>
-
 <!-- ── NAV ── -->
 <nav class="nav">
   <div class="nav-inner">
     <a href="#" class="nav-logo">
-      <img src="/static/paywise-logo.png" alt="P">
-      PayWise
+      <img src="/static/paywise-logo.png" alt="P"> PayWise
     </a>
     <a href="/wallet/login" class="nav-btn">Wallet Login</a>
   </div>
 </nav>
 
-<!-- ══════════ HERO ══════════ -->
+<!-- ══ HERO ══ -->
 <section class="hero">
   <div class="container">
     <div class="hero-pre anim">🇳🇬 DevCareer x Nomba Hackathon 2026</div>
@@ -239,8 +277,8 @@
       Your Money.
     </h1>
     <p class="anim anim-d2">
-      PayWise is an AI bookkeeper that lives inside WhatsApp. 
-      No app to download. No password to remember. 
+      PayWise is an AI bookkeeper that lives inside WhatsApp.
+      No app to download. No password to remember.
       Just talk — in Pidgin, Yoruba, Hausa, or Igbo — and your ledger updates itself.
     </p>
     <div class="hero-actions anim anim-d3">
@@ -250,12 +288,12 @@
   </div>
 </section>
 
-<!-- ══════════ THE PROBLEM ══════════ -->
+<!-- ══ THE PROBLEM ══ -->
 <section id="problem">
   <div class="container">
-    <div class="narrative">
+    <div style="text-align:center;">
       <div class="section-tag">Why PayWise Exists</div>
-      <h2 class="section-h2">Nigeria Runs on Trust.<br>Trust Shouldn't Cost ₦10 Trillion.</h2>
+      <h2 class="section-h2" style="color:#fff;">Nigeria Runs on Trust.<br>Trust Shouldn't Cost ₦10 Trillion.</h2>
       <p class="section-p">39.6 million micro-businesses power Africa's largest economy. Most track credit on paper. Every month, the average trader loses ₦50,000–150,000 to forgotten debt.</p>
     </div>
     <div class="stat-grid">
@@ -267,12 +305,12 @@
   </div>
 </section>
 
-<!-- ══════════ MEET MAMA BOLA ══════════ -->
-<section>
+<!-- ══ MEET MAMA BOLA ══ -->
+<section style="background:var(--bg-soft);">
   <div class="container">
     <div class="section-tag" style="text-align:center;">The Story</div>
     <h2 class="section-h2" style="text-align:center;">Meet Mama Bola.</h2>
-    <p class="section-p">She sells provisions at Oyingbo Market, Lagos. This is her day. This is why we built PayWise.</p>
+    <p class="section-p" style="text-align:center;margin:0 auto;">She sells provisions at Oyingbo Market, Lagos. This is her day. This is why we built PayWise.</p>
 
     <div class="story-card">
       <p>
@@ -288,12 +326,12 @@
   </div>
 </section>
 
-<!-- ══════════ HOW IT WORKS ══════════ -->
+<!-- ══ HOW IT WORKS ══ -->
 <section>
   <div class="container">
     <div class="section-tag" style="text-align:center;">How It Works</div>
     <h2 class="section-h2" style="text-align:center;">One Voice Note.<br>That's It.</h2>
-    <p class="section-p">No forms. No apps. No typing. Just open WhatsApp and talk. PayWise does the rest.</p>
+    <p class="section-p" style="text-align:center;margin:0 auto;">No forms. No apps. No typing. Just open WhatsApp and talk. PayWise does the rest.</p>
 
     <div class="steps-grid">
       <div class="step">
@@ -312,7 +350,7 @@
         <div class="step-num">Step 3</div>
         <div class="step-emoji">🏦</div>
         <h3>Debtor Gets a Bank Account</h3>
-        <p>A real Nomba virtual account is created. Your debtor gets an SMS with the account number. They pay from any bank.</p>
+        <p>A real Nomba virtual account is created. Your debtor gets an SMS with the account number. They pay from any bank app.</p>
       </div>
       <div class="step">
         <div class="step-num">Step 4</div>
@@ -324,108 +362,108 @@
   </div>
 </section>
 
-<!-- ══════════ TRY IT — QR CODE ══════════ -->
-<section id="try">
+<!-- ══ TRY IT — QR CODE ══ -->
+<section id="try" style="background:var(--bg-soft);">
   <div class="container">
     <div class="section-tag" style="text-align:center;">Try It Yourself</div>
     <h2 class="section-h2" style="text-align:center;">Scan. Send. Start.</h2>
-    <p class="section-p">Open your phone camera, scan the QR code, and start talking to PayWise. It takes 5 seconds.</p>
+    <p class="section-p" style="text-align:center;margin:0 auto;">Open your phone camera, scan the QR code, and start talking to PayWise. It takes 5 seconds.</p>
 
-    <div class="try-grid">
-      <!-- Left: QR -->
-      <div>
-        <div class="qr-box">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/14155238886?text=join%20fence-getting" alt="Scan to try PayWise">
-          <div class="qr-label">Scan with your phone camera</div>
-          <div class="qr-code-text">opens WhatsApp automatically</div>
+    <div class="try-section">
+      <div class="try-grid">
+        <div>
+          <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/14155238886?text=join%20fence-getting" alt="Scan to try PayWise">
+            <div class="qr-label">Scan with your phone camera</div>
+            <div class="qr-code-text">opens WhatsApp automatically</div>
+          </div>
         </div>
-      </div>
-      <!-- Right: Steps -->
-      <div>
-        <ol class="try-steps">
-          <li>
-            <div class="ts-num">1</div>
-            <div class="ts-content">
-              <h4>Scan the QR code</h4>
-              <p>Open your phone camera and point it at the QR code on the left. Tap the notification that appears.</p>
-            </div>
-          </li>
-          <li>
-            <div class="ts-num">2</div>
-            <div class="ts-content">
-              <h4>Send the join message</h4>
-              <p>WhatsApp opens with "join fence-getting" already typed. Tap <strong>Send</strong>. You're in.</p>
-            </div>
-          </li>
-          <li>
-            <div class="ts-num">3</div>
-            <div class="ts-content">
-              <h4>Talk to PayWise</h4>
-              <p>Send a voice note or text: "I be Mama Bola. I sell provisions for Oyingbo Market." PayWise sets you up instantly.</p>
-            </div>
-          </li>
-          <li>
-            <div class="ts-num">4</div>
-            <div class="ts-content">
-              <h4>Record a sale</h4>
-              <p>"Alhaji Sule carry 2 cartons biscuit for ₦25,000. Him number na 0809..." — and watch what happens.</p>
-            </div>
-          </li>
-          <li>
-            <div class="ts-num">5</div>
-            <div class="ts-content">
-              <h4>Check your wallet</h4>
-              <p>Login at <strong>/wallet</strong> to see your balance, transactions, and debts — all in one place.</p>
-            </div>
-          </li>
-        </ol>
+        <div>
+          <ol class="try-steps">
+            <li>
+              <div class="ts-num">1</div>
+              <div class="ts-content">
+                <h4>Scan the QR code</h4>
+                <p>Open your phone camera and point it at the QR code. Tap the notification that appears.</p>
+              </div>
+            </li>
+            <li>
+              <div class="ts-num">2</div>
+              <div class="ts-content">
+                <h4>Send the join message</h4>
+                <p>WhatsApp opens with "join fence-getting" already typed. Tap <strong>Send</strong>. You're in.</p>
+              </div>
+            </li>
+            <li>
+              <div class="ts-num">3</div>
+              <div class="ts-content">
+                <h4>Talk to PayWise</h4>
+                <p>Send a voice note or text: "I be Mama Bola. I sell provisions for Oyingbo Market." PayWise sets you up instantly.</p>
+              </div>
+            </li>
+            <li>
+              <div class="ts-num">4</div>
+              <div class="ts-content">
+                <h4>Record a sale</h4>
+                <p>"Alhaji Sule carry 2 cartons biscuit for ₦25,000. Him number na 0809..." — and watch what happens.</p>
+              </div>
+            </li>
+            <li>
+              <div class="ts-num">5</div>
+              <div class="ts-content">
+                <h4>Check your wallet</h4>
+                <p>Login at <strong>/wallet</strong> to see your balance, transactions, and debts — all in one place.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══════════ FEATURES ══════════ -->
+<!-- ══ FEATURES ══ -->
 <section>
   <div class="container">
-    <div class="section-tag" style="text-align:center;">Powered By</div>
+    <div class="section-tag" style="text-align:center;">Features</div>
     <h2 class="section-h2" style="text-align:center;">Built for the Market,<br>Not the Boardroom.</h2>
     <div class="steps-grid">
       <div class="step">
         <div class="step-emoji">🗣️</div>
         <h3>5 Nigerian Languages</h3>
-        <p>Speak Pidgin, Yoruba, Hausa, Igbo, or English. PayWise replies in YOUR language — with proper grammar and native accent.</p>
+        <p>Speak Pidgin, Yoruba, Hausa, Igbo, or English. PayWise replies in YOUR language with proper grammar and native-sounding voice.</p>
       </div>
       <div class="step">
         <div class="step-emoji">🎙️</div>
         <h3>Voice Note Replies</h3>
-        <p>Long replies come as voice notes in your language. Each language has a unique voice persona — Aunty Bose, Iya Gbemi, Mama Ngozi, Hajia Aisha.</p>
+        <p>Long replies come as voice notes. Each language has a unique persona — Aunty Bose, Iya Gbemi, Mama Ngozi, Hajia Aisha.</p>
       </div>
       <div class="step">
         <div class="step-emoji">📒</div>
         <h3>Never Lose a Sale</h3>
-        <p>Forgot the phone number? PayWise saves it as a draft. Complete it later. Nothing is ever lost — even if you walk away mid-sentence.</p>
+        <p>Forgot the phone number? PayWise saves it as a draft. Complete it later. Nothing is ever lost — even mid-conversation.</p>
       </div>
       <div class="step">
         <div class="step-emoji">🏦</div>
         <h3>Nomba Virtual Accounts</h3>
-        <p>Every debt gets a real bank account number. Debtors pay from any Nigerian bank app. Payments settle instantly via webhooks.</p>
+        <p>Every debt gets a real bank account number. Debtors pay from any Nigerian bank app. Settles instantly via webhooks.</p>
       </div>
       <div class="step">
         <div class="step-emoji">💳</div>
         <h3>Wallet &amp; Withdrawals</h3>
-        <p>Live balance, transaction history, and bank withdrawals — all from your secure wallet dashboard. The AI never touches your money.</p>
+        <p>Live balance, transaction history, bank withdrawals — all from your secure wallet dashboard. AI never touches money.</p>
       </div>
       <div class="step">
         <div class="step-emoji">🔒</div>
         <h3>Trust by Design</h3>
-        <p>The AI proposes — YOU confirm. No write ever happens without your yes. Withdrawals require password authentication on the web dashboard.</p>
+        <p>The AI proposes — YOU confirm. No write without your yes. Withdrawals require password on the web dashboard.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══════════ TECH STACK ══════════ -->
-<section style="padding-top:20px;">
+<!-- ══ TECH ══ -->
+<section style="background:var(--bg-soft);">
   <div class="container">
     <div class="section-tag" style="text-align:center;">Technology</div>
     <h2 class="section-h2" style="text-align:center;">What's Under the Hood</h2>
@@ -442,16 +480,16 @@
   </div>
 </section>
 
-<!-- ══════════ CTA ══════════ -->
+<!-- ══ CTA ══ -->
 <section class="cta-section">
   <div class="container">
     <h2 class="section-h2" style="margin-bottom:12px;">Ready to try it?</h2>
     <p style="color:var(--muted);margin-bottom:36px;">Scan the QR code above, or login to your wallet below.</p>
-    <a href="/wallet/login" class="glow">🔐 Login to Wallet Dashboard</a>
+    <a href="/wallet/login" class="cta-link">🔐 Login to Wallet Dashboard</a>
   </div>
 </section>
 
-<!-- ══════════ FOOTER ══════════ -->
+<!-- ══ FOOTER ══ -->
 <footer>
   <div class="container">
     PayWise — Built for the 39.6 million businesses that run Nigeria. 🇳🇬<br>
