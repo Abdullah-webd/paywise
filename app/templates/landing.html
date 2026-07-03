@@ -3,267 +3,460 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PayWise — The Bookkeeper Nigeria's Backbone Has Been Waiting For</title>
-<meta name="description" content="PayWise is a WhatsApp-based AI bookkeeper for Nigerian market traders. Record credit sales by voice note. Track who owes what. Get paid automatically.">
+<title>PayWise — The AI Bookkeeper That Lives in WhatsApp</title>
+<meta name="description" content="PayWise is a WhatsApp-based AI bookkeeper for Nigerian market traders. Record credit sales by voice note in Pidgin, Yoruba, Hausa, or Igbo.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
   :root {
-    --green-900: #064e3b; --green-700: #047857; --green-500: #10b981; --green-400: #34d399;
-    --green-50: #ecfdf5; --green-100: #d1fae5;
-    --amber: #f59e0b; --amber-light: #fef3c7;
-    --ink: #0f172a; --muted: #64748b; --light: #94a3b8;
-    --line: #e2e8f0; --bg: #ffffff; --bg-soft: #f8fafc;
+    --bg: #030712;
+    --surface: #0a0f1e;
+    --surface-2: #111827;
+    --border: #1e293b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --green: #10b981;
+    --green-glow: rgba(16, 185, 129, 0.25);
+    --green-bright: #34d399;
+    --amber: #f59e0b;
+    --amber-glow: rgba(245, 158, 11, 0.2);
+    --blue: #3b82f6;
+    --rose: #f43f5e;
+    --violet: #8b5cf6;
   }
-  body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.6; }
 
-  /* Nav */
-  nav {
-    position: fixed; top: 0; width: 100%; z-index: 100;
-    background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--line);
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
   }
-  nav .inner {
+
+  /* ── Ambient background ── */
+  .bg-ambient {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(16,185,129,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(139,92,246,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 50% 50%, rgba(59,130,246,0.04) 0%, transparent 70%);
+  }
+
+  /* ── Grid pattern overlay ── */
+  .grid-pattern {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.03;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* ── Nav ── */
+  .nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    background: rgba(3,7,18,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
     max-width: 1200px; margin: 0 auto; padding: 16px 24px;
     display: flex; align-items: center; justify-content: space-between;
   }
-  nav .logo { display: flex; align-items: center; gap: 8px; font-size: 1.5rem; font-weight: 800; color: var(--green-900); text-decoration: none; }
-  nav .logo img { height: 36px; }
+  .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--green); text-decoration: none; letter-spacing: -0.02em; }
+  .nav-logo img { height: 30px; vertical-align: middle; margin-right: 6px; }
+  .nav-btn {
+    padding: 10px 22px; border-radius: 10px; font-weight: 600; font-size: 0.88rem;
+    text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; font-family: inherit;
+    background: rgba(16,185,129,0.12); color: var(--green-bright); border: 1px solid rgba(16,185,129,0.2);
+  }
+  .nav-btn:hover { background: rgba(16,185,129,0.2); }
+
+  /* ── Sections ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  section { padding: 100px 0; position: relative; z-index: 1; }
+
+  /* ── HERO ── */
+  .hero { padding: 160px 0 80px; text-align: center; }
+  .hero-pre { display: inline-block; padding: 6px 18px; border-radius: 100px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--green-bright); font-size: 0.85rem; font-weight: 600; margin-bottom: 32px; letter-spacing: 0.02em; }
+  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 24px; }
+  .hero h1 .gr { background: linear-gradient(135deg, var(--green-bright), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 1.15rem; color: var(--muted); max-width: 620px; margin: 0 auto 40px; line-height: 1.7; }
+  .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
   .btn {
-    display: inline-block; padding: 12px 28px; border-radius: 12px;
-    font-weight: 600; font-size: 0.95rem; text-decoration: none;
-    transition: all 0.2s; cursor: pointer; border: none; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 12px;
+    font-weight: 600; font-size: 0.95rem; text-decoration: none; transition: all 0.25s;
+    cursor: pointer; border: none; font-family: inherit;
   }
-  .btn-primary { background: var(--green-700); color: #fff; }
-  .btn-primary:hover { background: var(--green-900); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(4,120,87,0.25); }
-  .btn-outline { background: transparent; color: var(--green-700); border: 2px solid var(--green-500); }
-  .btn-outline:hover { background: var(--green-50); }
-  .btn-amber { background: var(--amber); color: #fff; }
-  .btn-amber:hover { background: #d97706; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,158,11,0.3); }
-
-  /* Hero */
-  .hero {
-    padding: 140px 24px 80px; text-align: center; max-width: 900px; margin: 0 auto;
+  .btn-green {
+    background: var(--green); color: #000;
+    box-shadow: 0 0 30px var(--green-glow);
   }
-  .hero .badge {
-    display: inline-block; padding: 6px 16px; border-radius: 100px;
-    background: var(--green-50); color: var(--green-700); font-size: 0.85rem; font-weight: 600;
-    margin-bottom: 24px;
+  .btn-green:hover { transform: translateY(-2px); box-shadow: 0 0 50px var(--green-glow); }
+  .btn-outline {
+    background: transparent; color: var(--text); border: 1px solid var(--border);
   }
-  .hero h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.15; margin-bottom: 20px; letter-spacing: -0.02em; }
-  .hero h1 span { color: var(--green-700); }
-  .hero p { font-size: 1.2rem; color: var(--muted); max-width: 650px; margin: 0 auto 36px; }
-  .hero .actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn-outline:hover { border-color: var(--green); color: var(--green-bright); }
 
-  /* Sections */
-  section { padding: 80px 24px; }
-  .section-inner { max-width: 1100px; margin: 0 auto; }
-  .section-tag { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--green-700); margin-bottom: 12px; }
-  .section-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.01em; }
-  .section-sub { font-size: 1.1rem; color: var(--muted); max-width: 600px; }
-
-  /* Stats */
-  #problem { background: var(--green-900); color: #fff; }
-  #problem .section-tag { color: var(--green-400); }
-  #problem .section-sub { color: var(--green-100); }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 48px; }
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 56px; }
   .stat-card {
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 16px; padding: 28px; backdrop-filter: blur(8px);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px;
+    text-align: center; transition: border-color 0.3s;
   }
-  .stat-card .number { font-size: 2.2rem; font-weight: 800; color: var(--green-400); line-height: 1.1; margin-bottom: 8px; }
-  .stat-card .label { font-size: 0.95rem; color: var(--green-100); }
-  .stat-card .source { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 8px; }
+  .stat-card:hover { border-color: var(--green); }
+  .stat-num { font-family: 'Space Grotesk', sans-serif; font-size: 2.6rem; font-weight: 800; background: linear-gradient(135deg, var(--green-bright), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.1; }
+  .stat-label { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+  .stat-src { color: rgba(148,163,184,0.4); font-size: 0.72rem; margin-top: 6px; }
 
-  /* How it works */
-  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 32px; margin-top: 48px; }
-  .step { text-align: center; }
-  .step .icon {
-    width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
-    font-size: 2rem; margin: 0 auto 20px;
+  /* ── PROBLEM NARRATIVE ── */
+  .narrative { text-align: center; }
+  .section-tag { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--green-bright); margin-bottom: 16px; }
+  .section-h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 18px; }
+  .section-p { color: var(--muted); font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
+
+  /* ── STORY CARD ── */
+  .story-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 48px; margin-top: 48px; position: relative; overflow: hidden;
   }
-  .step:nth-child(1) .icon { background: var(--green-50); }
-  .step:nth-child(2) .icon { background: var(--amber-light); }
-  .step:nth-child(3) .icon { background: #dbeafe; }
-  .step:nth-child(4) .icon { background: #fce7f3; }
-  .step h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
-  .step p { font-size: 0.9rem; color: var(--muted); max-width: 240px; margin: 0 auto; }
-
-  /* Features */
-  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 48px; }
-  .feature {
-    background: var(--bg-soft); border: 1px solid var(--line); border-radius: 16px; padding: 32px;
-    transition: transform 0.2s, box-shadow 0.2s;
+  .story-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue), var(--violet));
   }
-  .feature:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.06); }
-  .feature h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
-  .feature p { color: var(--muted); font-size: 0.9rem; }
+  .story-card p { font-size: 1.1rem; color: var(--muted); max-width: 700px; margin: 0 auto; line-height: 1.8; }
+  .story-card .highlight { color: var(--rose); font-weight: 600; }
+  .story-card .highlight-green { color: var(--green-bright); font-weight: 600; }
 
-  /* CTA */
-  #cta { background: linear-gradient(135deg, var(--green-900), #065f46); color: #fff; text-align: center; }
-  #cta .section-sub { color: var(--green-100); margin: 0 auto; }
-  #cta .btn { margin-top: 32px; }
+  /* ── STEPS ── */
+  .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; margin-top: 48px; }
+  .step {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 28px;
+    position: relative; transition: border-color 0.3s, transform 0.3s;
+  }
+  .step:hover { border-color: var(--green); transform: translateY(-4px); }
+  .step-num { font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--green-bright); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 16px; }
+  .step-emoji { font-size: 2rem; margin-bottom: 16px; }
+  .step h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+  .step p { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
 
-  /* Footer */
-  footer { padding: 40px 24px; text-align: center; color: var(--light); font-size: 0.85rem; border-top: 1px solid var(--line); }
+  /* ── TRY IT SECTION ── */
+  .try-section { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 56px; margin-top: 48px; text-align: center; }
+  .try-section h2 { font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-bottom: 8px; }
+  .try-section .sub { color: var(--muted); font-size: 1rem; margin-bottom: 40px; }
+  .try-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; text-align: left; }
+  @media (max-width: 768px) { .try-grid { grid-template-columns: 1fr; } .try-grid > div:first-child { order: 2; } .try-grid > div:last-child { order: 1; } }
+  .qr-box {
+    display: flex; flex-direction: column; align-items: center;
+    background: #fff; border-radius: 20px; padding: 28px; text-align: center;
+  }
+  .qr-box img { width: 160px; height: 160px; }
+  .qr-box .qr-label { color: #0f172a; font-weight: 700; font-size: 0.9rem; margin-top: 12px; }
+  .qr-box .qr-code-text { color: #64748b; font-size: 0.78rem; margin-top: 4px; font-family: monospace; }
+  .try-steps { list-style: none; }
+  .try-steps li {
+    display: flex; gap: 16px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--border);
+  }
+  .try-steps li:last-child { border: none; }
+  .try-steps .ts-num {
+    width: 36px; height: 36px; border-radius: 10px; background: rgba(16,185,129,0.12);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: var(--green-bright);
+    flex-shrink: 0;
+  }
+  .try-steps .ts-content h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+  .try-steps .ts-content p { color: var(--muted); font-size: 0.85rem; }
 
-  /* Responsive */
+  /* ── TECH ── */
+  .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 40px; }
+  .tech-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; text-align: center; font-size: 0.88rem; font-weight: 600; color: var(--muted);
+    transition: border-color 0.3s, color 0.3s;
+  }
+  .tech-item:hover { border-color: var(--green); color: var(--text); }
+
+  /* ── CTA ── */
+  .cta-section { text-align: center; padding: 80px 0; }
+  .cta-section .glow {
+    display: inline-flex; align-items: center; gap: 8px; padding: 14px 40px; border-radius: 14px;
+    background: var(--green); color: #000; font-weight: 700; font-size: 1rem; text-decoration: none;
+    box-shadow: 0 0 60px var(--green-glow); transition: all 0.3s;
+  }
+  .cta-section .glow:hover { box-shadow: 0 0 100px var(--green-glow); transform: translateY(-3px); }
+
+  /* ── FOOTER ── */
+  footer { border-top: 1px solid var(--border); padding: 40px 24px; text-align: center; color: rgba(148,163,184,0.5); font-size: 0.82rem; }
+
+  /* ── Animations ── */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  .anim { animation: fadeUp 0.7s ease-out both; }
+  .anim-d1 { animation-delay: 0.1s; }
+  .anim-d2 { animation-delay: 0.2s; }
+  .anim-d3 { animation-delay: 0.3s; }
+  .anim-d4 { animation-delay: 0.4s; }
+
+  /* ── Pulse ring for QR ── */
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+    70% { box-shadow: 0 0 0 18px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+  .qr-box { animation: pulse-ring 2.5s infinite; }
+
   @media (max-width: 768px) {
-    .hero h1 { font-size: 2.2rem; }
-    .section-title { font-size: 1.8rem; }
-    .hero { padding: 120px 20px 60px; }
-    section { padding: 48px 20px; }
+    .hero { padding: 120px 0 60px; }
+    section { padding: 60px 0; }
+    .story-card { padding: 32px 24px; }
+    .try-section { padding: 32px 24px; }
+    .qr-box img { width: 130px; height: 130px; }
   }
 </style>
 </head>
 <body>
 
-<!-- Nav -->
-<nav>
-  <div class="inner">
-    <a href="#" class="logo"><img src="/static/paywise-logo.png" alt="PayWise"></a>
-    <a href="/wallet/login" class="btn btn-primary">Login</a>
+<div class="bg-ambient"></div>
+<div class="grid-pattern"></div>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="/static/paywise-logo.png" alt="P">
+      PayWise
+    </a>
+    <a href="/wallet/login" class="nav-btn">Wallet Login</a>
   </div>
 </nav>
 
-<!-- Hero -->
+<!-- ══════════ HERO ══════════ -->
 <section class="hero">
-  <img src="/static/paywise-logo.png" alt="PayWise" style="height:60px;margin-bottom:24px;">
-  <div class="badge">🇳🇬 Built for Nigerian Market Traders</div>
-  <h1>The Bookkeeper <span>Nigeria's Backbone</span> Has Been Waiting For</h1>
-  <p>PayWise lives inside WhatsApp. No app to install. No password to remember. Just send a voice note in Pidgin, Yoruba, Hausa, Igbo, or English — and your ledger is updated instantly.</p>
-  <div class="actions">
-    <a href="#how" class="btn btn-primary">How It Works</a>
-    <a href="/wallet/login" class="btn btn-outline" style="color:var(--green-700);">Login to Wallet →</a>
+  <div class="container">
+    <div class="hero-pre anim">🇳🇬 DevCareer x Nomba Hackathon 2026</div>
+    <h1 class="anim anim-d1">
+      Your Market.<br>
+      <span class="gr">Your Language.</span><br>
+      Your Money.
+    </h1>
+    <p class="anim anim-d2">
+      PayWise is an AI bookkeeper that lives inside WhatsApp. 
+      No app to download. No password to remember. 
+      Just talk — in Pidgin, Yoruba, Hausa, or Igbo — and your ledger updates itself.
+    </p>
+    <div class="hero-actions anim anim-d3">
+      <a href="#try" class="btn btn-green">→ Try PayWise Now</a>
+      <a href="#problem" class="btn btn-outline">See the Problem</a>
+    </div>
   </div>
 </section>
 
-<!-- The Problem -->
+<!-- ══════════ THE PROBLEM ══════════ -->
 <section id="problem">
-  <div class="section-inner">
-    <div class="section-tag">The Problem</div>
-    <h2 class="section-title">₦5–10 Trillion Lost Every Year</h2>
-    <p class="section-sub">Nigeria's 39.6 million micro and small businesses run the economy — but 70% track finances on paper. Every month, the average trader loses ₦50,000–150,000 just to forgotten debt.</p>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="number">39.6M</div>
-        <div class="label">Micro &amp; small businesses in Nigeria</div>
-        <div class="source">NBS / SMEDAN 2021</div>
-      </div>
-      <div class="stat-card">
-        <div class="number">70%</div>
-        <div class="label">Use paper or manual bookkeeping</div>
-        <div class="source">PwC Nigeria MSME Survey</div>
-      </div>
-      <div class="stat-card">
-        <div class="number">₦5–10T</div>
-        <div class="label">Lost annually to fraud, bad debt &amp; broken records</div>
-        <div class="source">TDPel / Business Insight News 2026</div>
-      </div>
-      <div class="stat-card">
-        <div class="number">80%</div>
-        <div class="label">Of MSMEs locked out of formal credit</div>
-        <div class="source">NCGC via Nairametrics 2025</div>
-      </div>
+  <div class="container">
+    <div class="narrative">
+      <div class="section-tag">Why PayWise Exists</div>
+      <h2 class="section-h2">Nigeria Runs on Trust.<br>Trust Shouldn't Cost ₦10 Trillion.</h2>
+      <p class="section-p">39.6 million micro-businesses power Africa's largest economy. Most track credit on paper. Every month, the average trader loses ₦50,000–150,000 to forgotten debt.</p>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">39.6M</div><div class="stat-label">Micro &amp; small businesses</div><div class="stat-src">NBS / SMEDAN 2021</div></div>
+      <div class="stat-card"><div class="stat-num">70%</div><div class="stat-label">Track finances on paper</div><div class="stat-src">PwC Nigeria MSME Survey</div></div>
+      <div class="stat-card"><div class="stat-num">₦5–10T</div><div class="stat-label">Lost to bad debt yearly</div><div class="stat-src">TDPel / Business Insight 2026</div></div>
+      <div class="stat-card"><div class="stat-num">80%</div><div class="stat-label">Locked out of credit</div><div class="stat-src">NCGC via Nairametrics 2025</div></div>
     </div>
   </div>
 </section>
 
-<!-- How It Works -->
-<section id="how">
-  <div class="section-inner">
-    <div class="section-tag">How It Works</div>
-    <h2 class="section-title">One Voice Note. That's It.</h2>
-    <p class="section-sub">No app. No form. No username. No password. Just talk to WhatsApp the way you talk to your customers.</p>
-    <div class="steps">
-      <div class="step">
-        <div class="icon">🎤</div>
-        <h3>1. Send a Voice Note</h3>
-        <p>"Alhaji Sule carry 2 cartons milk for ₦20,000. Him number na 0807…"</p>
-      </div>
-      <div class="step">
-        <div class="icon">🧠</div>
-        <h3>2. AI Understands</h3>
-        <p>PayWise transcribes your voice, extracts the name, amount, goods, and phone number — in your language.</p>
-      </div>
-      <div class="step">
-        <div class="icon">🏦</div>
-        <h3>3. Debtor Gets Account</h3>
-        <p>A real bank account number is generated and sent to your debtor. They pay from any bank app.</p>
-      </div>
-      <div class="step">
-        <div class="icon">💰</div>
-        <h3>4. You Get Paid</h3>
-        <p>When money lands, your wallet updates instantly. Both parties get WhatsApp receipts. No manual work.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Features -->
-<section style="background: var(--bg-soft);">
-  <div class="section-inner">
-    <div class="section-tag">Features</div>
-    <h2 class="section-title">Built for the Market, Not the Boardroom</h2>
-    <div class="features-grid">
-      <div class="feature">
-        <h3>🗣️ Voice-First</h3>
-        <p>Send voice notes in your natural speech. No typing required. Works even on basic phones with WhatsApp.</p>
-      </div>
-      <div class="feature">
-        <h3>🌍 5 Nigerian Languages</h3>
-        <p>Speak Pidgin, Yoruba, Hausa, Igbo, or English. PayWise replies in the same language — real dialect, not Google Translate.</p>
-      </div>
-      <div class="feature">
-        <h3>🏦 Real Bank Accounts</h3>
-        <p>Every debt gets a unique bank account number via Nomba. Debtors pay from any Nigerian bank app. No USSD. No payment links.</p>
-      </div>
-      <div class="feature">
-        <h3>⚡ Instant Settlement</h3>
-        <p>When a debtor pays, your wallet balance updates in real time. Both you and the debtor get WhatsApp receipts simultaneously.</p>
-      </div>
-      <div class="feature">
-        <h3>📒 Never Lose a Sale</h3>
-        <p>Started recording a debt but forgot the phone number? PayWise saves it as a draft. Complete it later. Nothing is ever lost.</p>
-      </div>
-      <div class="feature">
-        <h3>🔒 Trust by Design</h3>
-        <p>The AI proposes changes — only YOU confirm them. The system physically cannot write to your ledger without your "yes."</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Languages -->
+<!-- ══════════ MEET MAMA BOLA ══════════ -->
 <section>
-  <div class="section-inner" style="text-align:center;">
-    <div class="section-tag">Languages</div>
-    <h2 class="section-title">Speak Your Language</h2>
-    <p class="section-sub">PayWise speaks five Nigerian languages natively — with proper grammar, not word-for-word translation.</p>
-    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:32px;">
-      <div style="background:var(--green-50);padding:12px 24px;border-radius:100px;font-weight:700;color:var(--green-900);">🇳🇬 Pidgin</div>
-      <div style="background:var(--amber-light);padding:12px 24px;border-radius:100px;font-weight:700;color:#92400e;">🇳🇬 Yoruba</div>
-      <div style="background:#dbeafe;padding:12px 24px;border-radius:100px;font-weight:700;color:#1e40af;">🇳🇬 Hausa</div>
-      <div style="background:#fce7f3;padding:12px 24px;border-radius:100px;font-weight:700;color:#9d174d;">🇳🇬 Igbo</div>
-      <div style="background:#f3f4f6;padding:12px 24px;border-radius:100px;font-weight:700;color:#374151;">🇬🇧 English</div>
+  <div class="container">
+    <div class="section-tag" style="text-align:center;">The Story</div>
+    <h2 class="section-h2" style="text-align:center;">Meet Mama Bola.</h2>
+    <p class="section-p">She sells provisions at Oyingbo Market, Lagos. This is her day. This is why we built PayWise.</p>
+
+    <div class="story-card">
+      <p>
+        <span class="highlight">5:47 AM.</span> Mama Bola opens her shop. She pulls out a worn notebook — 47 names, scribbled amounts, crossed-out numbers. She squints. "Alhaji Musa... ₦8,500 or ₦5,800?" The ink is smudged. She can't tell. <span class="highlight">That's ₦2,700 she'll never recover.</span>
+      </p>
+      <p style="margin-top:20px;">
+        <span class="highlight">By noon,</span> three more customers take goods on credit. She writes their names on a receipt she'll probably lose before Friday. Her daughter helps after school, but neither of them speaks accounting. The bank won't give her a loan — she has no credit history. She's been running this shop for <span class="highlight">14 years.</span>
+      </p>
+      <p style="margin-top:20px;">
+        <span class="highlight-green">This is not just Mama Bola's story.</span> It's the story of 27 million Nigerian market traders who move billions of naira — tracked on paper, managed from memory, lost to chaos. They don't need an MBA. They don't need QuickBooks. <span class="highlight-green">They need something that speaks their language.</span>
+      </p>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section id="cta">
-  <div class="section-inner">
-    <div class="section-tag" style="color:var(--green-400);">Get Started</div>
-    <h2 class="section-title">Already Using PayWise?</h2>
-    <p class="section-sub">Login to your wallet dashboard to check your balance, view transactions, see who owes you, and withdraw your money.</p>
-    <a href="/wallet/login" class="btn btn-amber">Login to Your Wallet →</a>
+<!-- ══════════ HOW IT WORKS ══════════ -->
+<section>
+  <div class="container">
+    <div class="section-tag" style="text-align:center;">How It Works</div>
+    <h2 class="section-h2" style="text-align:center;">One Voice Note.<br>That's It.</h2>
+    <p class="section-p">No forms. No apps. No typing. Just open WhatsApp and talk. PayWise does the rest.</p>
+
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">Step 1</div>
+        <div class="step-emoji">🎤</div>
+        <h3>Send a Voice Note</h3>
+        <p>"Alhaji Musa buy 3 bags rice for ₦45,000. He go pay next week. Him number na 0803..."</p>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 2</div>
+        <div class="step-emoji">🧠</div>
+        <h3>AI Understands You</h3>
+        <p>PayWise transcribes your voice in Pidgin, Yoruba, Hausa, or Igbo — extracts name, amount, goods, phone number.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 3</div>
+        <div class="step-emoji">🏦</div>
+        <h3>Debtor Gets a Bank Account</h3>
+        <p>A real Nomba virtual account is created. Your debtor gets an SMS with the account number. They pay from any bank.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 4</div>
+        <div class="step-emoji">💰</div>
+        <h3>You Get Paid. Instantly.</h3>
+        <p>Money lands → wallet updates. Both you and your debtor get receipts. No manual work. No chasing people.</p>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- Footer -->
+<!-- ══════════ TRY IT — QR CODE ══════════ -->
+<section id="try">
+  <div class="container">
+    <div class="section-tag" style="text-align:center;">Try It Yourself</div>
+    <h2 class="section-h2" style="text-align:center;">Scan. Send. Start.</h2>
+    <p class="section-p">Open your phone camera, scan the QR code, and start talking to PayWise. It takes 5 seconds.</p>
+
+    <div class="try-grid">
+      <!-- Left: QR -->
+      <div>
+        <div class="qr-box">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/14155238886?text=join%20fence-getting" alt="Scan to try PayWise">
+          <div class="qr-label">Scan with your phone camera</div>
+          <div class="qr-code-text">opens WhatsApp automatically</div>
+        </div>
+      </div>
+      <!-- Right: Steps -->
+      <div>
+        <ol class="try-steps">
+          <li>
+            <div class="ts-num">1</div>
+            <div class="ts-content">
+              <h4>Scan the QR code</h4>
+              <p>Open your phone camera and point it at the QR code on the left. Tap the notification that appears.</p>
+            </div>
+          </li>
+          <li>
+            <div class="ts-num">2</div>
+            <div class="ts-content">
+              <h4>Send the join message</h4>
+              <p>WhatsApp opens with "join fence-getting" already typed. Tap <strong>Send</strong>. You're in.</p>
+            </div>
+          </li>
+          <li>
+            <div class="ts-num">3</div>
+            <div class="ts-content">
+              <h4>Talk to PayWise</h4>
+              <p>Send a voice note or text: "I be Mama Bola. I sell provisions for Oyingbo Market." PayWise sets you up instantly.</p>
+            </div>
+          </li>
+          <li>
+            <div class="ts-num">4</div>
+            <div class="ts-content">
+              <h4>Record a sale</h4>
+              <p>"Alhaji Sule carry 2 cartons biscuit for ₦25,000. Him number na 0809..." — and watch what happens.</p>
+            </div>
+          </li>
+          <li>
+            <div class="ts-num">5</div>
+            <div class="ts-content">
+              <h4>Check your wallet</h4>
+              <p>Login at <strong>/wallet</strong> to see your balance, transactions, and debts — all in one place.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FEATURES ══════════ -->
+<section>
+  <div class="container">
+    <div class="section-tag" style="text-align:center;">Powered By</div>
+    <h2 class="section-h2" style="text-align:center;">Built for the Market,<br>Not the Boardroom.</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-emoji">🗣️</div>
+        <h3>5 Nigerian Languages</h3>
+        <p>Speak Pidgin, Yoruba, Hausa, Igbo, or English. PayWise replies in YOUR language — with proper grammar and native accent.</p>
+      </div>
+      <div class="step">
+        <div class="step-emoji">🎙️</div>
+        <h3>Voice Note Replies</h3>
+        <p>Long replies come as voice notes in your language. Each language has a unique voice persona — Aunty Bose, Iya Gbemi, Mama Ngozi, Hajia Aisha.</p>
+      </div>
+      <div class="step">
+        <div class="step-emoji">📒</div>
+        <h3>Never Lose a Sale</h3>
+        <p>Forgot the phone number? PayWise saves it as a draft. Complete it later. Nothing is ever lost — even if you walk away mid-sentence.</p>
+      </div>
+      <div class="step">
+        <div class="step-emoji">🏦</div>
+        <h3>Nomba Virtual Accounts</h3>
+        <p>Every debt gets a real bank account number. Debtors pay from any Nigerian bank app. Payments settle instantly via webhooks.</p>
+      </div>
+      <div class="step">
+        <div class="step-emoji">💳</div>
+        <h3>Wallet &amp; Withdrawals</h3>
+        <p>Live balance, transaction history, and bank withdrawals — all from your secure wallet dashboard. The AI never touches your money.</p>
+      </div>
+      <div class="step">
+        <div class="step-emoji">🔒</div>
+        <h3>Trust by Design</h3>
+        <p>The AI proposes — YOU confirm. No write ever happens without your yes. Withdrawals require password authentication on the web dashboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ TECH STACK ══════════ -->
+<section style="padding-top:20px;">
+  <div class="container">
+    <div class="section-tag" style="text-align:center;">Technology</div>
+    <h2 class="section-h2" style="text-align:center;">What's Under the Hood</h2>
+    <div class="tech-grid">
+      <div class="tech-item">🐍 Python / FastAPI</div>
+      <div class="tech-item">🧠 LangGraph + GPT-5</div>
+      <div class="tech-item">💬 Twilio WhatsApp</div>
+      <div class="tech-item">🏦 Nomba Banking API</div>
+      <div class="tech-item">🎙️ ElevenLabs STT</div>
+      <div class="tech-item">🔊 Gemini 3.1 TTS</div>
+      <div class="tech-item">🍃 MongoDB Atlas</div>
+      <div class="tech-item">🚂 Railway Deploy</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CTA ══════════ -->
+<section class="cta-section">
+  <div class="container">
+    <h2 class="section-h2" style="margin-bottom:12px;">Ready to try it?</h2>
+    <p style="color:var(--muted);margin-bottom:36px;">Scan the QR code above, or login to your wallet below.</p>
+    <a href="/wallet/login" class="glow">🔐 Login to Wallet Dashboard</a>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
 <footer>
-  <p>PayWise — Built for the 39.6 million businesses that run Nigeria. 🇳🇬</p>
+  <div class="container">
+    PayWise — Built for the 39.6 million businesses that run Nigeria. 🇳🇬<br>
+    <span style="font-size:0.75rem;">DevCareer x Nomba Hackathon 2026 · Ajala Abdullah</span>
+  </div>
 </footer>
 
 </body>
