@@ -249,6 +249,77 @@ class NombaClient:
             log.error("Nomba update VA failed: %s", e)
             return {"updated": False, "error": str(e)}
 
+    # ---------- account balance & transactions ---------------------
+
+    async def get_sub_account_balance(self) -> dict[str, Any]:
+        """Fetch the live balance of the configured sub-account.
+
+        GET /v1/accounts/{subAccountId}/balance
+        Returns amount (Naira decimal string) and currency.
+        """
+        sub_id = settings.nomba_sub_account_id
+        url = f"{self._base}/v1/accounts/{sub_id}/balance"
+        headers = await self._headers()
+        try:
+            resp = await self._http.get(url, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error("Nomba balance fetch failed %s: %s", resp.status_code, resp.text)
+            raise NombaError(f"get_sub_account_balance HTTP {resp.status_code}: {resp.text}") from e
+        except httpx.HTTPError as e:
+            raise NombaError(f"get_sub_account_balance network error: {e}") from e
+
+        body = resp.json()
+        data = body.get("data", body)
+        return {
+            "balance_naira": float(data.get("amount", 0)),
+            "currency": data.get("currency", "NGN"),
+            "time_created": data.get("timeCreated"),
+        }
+
+    async def get_sub_account_transactions(self, page: int = 1, size: int = 10) -> dict[str, Any]:
+        """Fetch recent transactions for the configured sub-account.
+
+        GET /v1/transactions/accounts/{subAccountId}?page=1&size=10
+        Returns a list of transactions (credits, debits, fees, etc.).
+        """
+        sub_id = settings.nomba_sub_account_id
+        url = f"{self._base}/v1/transactions/accounts/{sub_id}?page={page}&size={size}"
+        headers = await self._headers()
+        try:
+            resp = await self._http.get(url, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error("Nomba txn fetch failed %s: %s", resp.status_code, resp.text)
+            raise NombaError(f"get_sub_account_transactions HTTP {resp.status_code}: {resp.text}") from e
+        except httpx.HTTPError as e:
+            raise NombaError(f"get_sub_account_transactions network error: {e}") from e
+
+        body = resp.json()
+        data = body.get("data", body)
+        results = data.get("results", [])
+        txns = []
+        for t in results:
+            txns.append({
+                "id": t.get("id"),
+                "status": t.get("status"),
+                "type": t.get("type"),
+                "amount": float(t.get("amount", 0)),
+                "fee": float(t.get("fixedCharge", 0)),
+                "entry_type": t.get("entryType"),
+                "sender_name": t.get("senderName") or t.get("ktaSenderName"),
+                "sender_account": t.get("accountNumber") or t.get("ktaSenderAccountNumber"),
+                "sender_bank": t.get("bankName") or t.get("ktaSenderBankCode"),
+                "narration": t.get("narration"),
+                "time_created": t.get("timeCreated"),
+                "wallet_balance": float(t.get("walletBalance", 0)),
+            })
+        return {
+            "transactions": txns,
+            "count": len(txns),
+            "cursor": data.get("cursor", ""),
+        }
+
     # ---------- expire / delete virtual accounts -------------------
 
     async def expire_virtual_account(self, account_ref: str) -> dict[str, Any]:

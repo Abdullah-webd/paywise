@@ -227,6 +227,36 @@ async def list_drafts(merchant_id: str) -> dict:
     return {"count": len(out), "drafts": out}
 
 
+# ------------------------------------------------------------------- nomba
+
+async def get_nomba_balance(merchant_id: str) -> dict:
+    """Fetch the live Nomba sub-account balance."""
+    from app.services.nomba import nomba
+    try:
+        data = await nomba.get_sub_account_balance()
+        return {
+            "success": True,
+            "balance_naira": data["balance_naira"],
+            "currency": data["currency"],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+async def get_nomba_transactions(merchant_id: str, page: int = 1, count: int = 5) -> dict:
+    """Fetch recent Nomba sub-account transactions (credits on the VA)."""
+    from app.services.nomba import nomba
+    try:
+        data = await nomba.get_sub_account_transactions(page=page, size=count)
+        return {
+            "success": True,
+            "transactions": data["transactions"],
+            "count": data["count"],
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 async def get_merchant_login_details(phone: str) -> dict:
     """Retrieve a merchant's login URL and password so the agent can tell them.
 

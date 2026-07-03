@@ -151,6 +151,35 @@ _register(
 )(tools_read.get_wallet_summary)
 
 _register(
+    "get_nomba_balance",
+    {
+        "name": "get_nomba_balance",
+        "description": "Get the live Nomba wallet balance (the actual bank balance, not the internal ledger). Use when the merchant asks 'how much dey my account?', 'check my balance', 'how much I get?', or wants to know their real bank balance.",
+        "parameters": {
+            "type": "object",
+            "properties": {"merchant_id": {"type": "string"}},
+            "required": ["merchant_id"],
+        },
+    },
+)(tools_read.get_nomba_balance)
+
+_register(
+    "get_nomba_transactions",
+    {
+        "name": "get_nomba_transactions",
+        "description": "Get recent Nomba transactions (who paid in, how much, when). Use when the merchant asks 'who don pay?', 'any payment enter?', 'show me my transactions', 'any alert?', or wants to see recent credits on their account.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "merchant_id": {"type": "string"},
+                "count": {"type": "integer", "default": 5, "description": "How many recent transactions to fetch"},
+            },
+            "required": ["merchant_id"],
+        },
+    },
+)(tools_read.get_nomba_transactions)
+
+_register(
     "get_merchant_login_details",
     {
         "name": "get_merchant_login_details",
