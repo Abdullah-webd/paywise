@@ -335,6 +335,32 @@ class NombaClient:
 
     # ---------- account balance & transactions ---------------------
 
+    async def get_parent_balance(self) -> dict[str, Any]:
+        """Fetch the live PARENT account balance (where transfers debit from).
+
+        GET /v1/accounts/balance
+        This is the real pool of money — reflects all inflows AND outflows.
+        The sub-account balance only tracks virtual account collections.
+        """
+        url = f"{self._base}/v1/accounts/balance"
+        headers = await self._headers()
+        try:
+            resp = await self._http.get(url, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error("Nomba parent balance fetch failed %s: %s", resp.status_code, resp.text)
+            raise NombaError(f"get_parent_balance HTTP {resp.status_code}: {resp.text}") from e
+        except httpx.HTTPError as e:
+            raise NombaError(f"get_parent_balance network error: {e}") from e
+
+        body = resp.json()
+        data = body.get("data", body)
+        return {
+            "balance_naira": float(data.get("amount", 0)),
+            "currency": data.get("currency", "NGN"),
+            "time_created": data.get("timeCreated"),
+        }
+
     async def get_sub_account_balance(self) -> dict[str, Any]:
         """Fetch the live balance of the configured sub-account.
 

@@ -125,17 +125,28 @@ async def api_summary(request: Request):
     open_debts = await db.debts.count_documents({"merchant_id": str(merchant["_id"]),
                                                  "status": {"$in": ["PENDING", "PARTIAL"]}})
 
-    # Fetch LIVE Nomba balance (real bank balance, not internal ledger)
+    # Fetch LIVE Nomba balance + subtract successful withdrawals
+    # (transfers debit from parent pool, not sub-account balance)
     live_balance_kobo = 0
     live_balance_str = "₦0"
     try:
         bal = await nomba.get_sub_account_balance()
         live_balance_kobo = int(bal["balance_naira"] * 100)
-        live_balance_str = fmt_naira(live_balance_kobo)
     except Exception as e:
         log.warning("Could not fetch live Nomba balance: %s", e)
         live_balance_kobo = merchant.get("balance_kobo", 0)
-        live_balance_str = fmt_naira(live_balance_kobo)
+    
+    # Subtract successful withdrawals (transfers drain parent wallet, not sub-account)
+    withdrawal_total = 0
+    async for w in db.withdrawals.find({
+        "merchant_id": str(merchant["_id"]),
+        "status": "SUCCESS",
+    }):
+        withdrawal_total += w.get("amount_kobo", 0)
+    live_balance_kobo -= withdrawal_total
+    if live_balance_kobo < 0:
+        live_balance_kobo = 0
+    live_balance_str = fmt_naira(live_balance_kobo)
 
     return {
         "name": merchant.get("name"),
@@ -246,10 +257,20 @@ async def api_withdraw(request: Request):
     if not bank_code or not account_number:
         return JSONResponse({"error": "Bank code and account number required."}, status_code=400)
 
-    # Get REAL Nomba balance, not internal ledger
+    # Get REAL Nomba balance minus successful withdrawals
     try:
         live = await nomba.get_sub_account_balance()
         live_balance_naira = live["balance_naira"]
+        # Subtract withdrawals (they debit from parent, not sub-account)
+        withdrawal_total = 0
+        async for w in db.withdrawals.find({
+            "merchant_id": str(merchant["_id"]),
+            "status": "SUCCESS",
+        }):
+            withdrawal_total += w.get("amount_kobo", 0)
+        live_balance_naira -= withdrawal_total / 100
+        if live_balance_naira < 0:
+            live_balance_naira = 0
     except Exception:
         return JSONResponse({"error": "Could not verify bank balance. Try again."}, status_code=502)
 
