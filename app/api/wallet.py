@@ -258,6 +258,7 @@ async def api_withdraw(request: Request):
         return JSONResponse({"error": "Bank code and account number required."}, status_code=400)
 
     # Get REAL Nomba balance minus successful withdrawals
+    db = get_db()
     try:
         live = await nomba.get_sub_account_balance()
         live_balance_naira = live["balance_naira"]
