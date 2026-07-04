@@ -267,14 +267,17 @@ class NombaClient:
         amount_naira: float,
         reference: str,
     ) -> dict[str, Any]:
-        """Move money OUT of the parent wallet to a commercial bank account.
+        """Move money OUT of the SUB-ACCOUNT wallet to a commercial bank account.
 
-        `reference` is sent as the X-Idempotent-key so a retried withdrawal
-        never pays out twice.
+        POST /v2/transfers/bank/{subAccountId}
+        The subAccountId is in the URL PATH, so Nomba debits ONLY from that
+        sub-account's available balance — never from the shared parent pool.
+
+        `reference` is sent as merchantTxRef + X-Idempotent-key so a retried
+        withdrawal never pays out twice.
         """
-        url = f"{self._base}/v2/transfers/bank"
-        # accountId in the BODY scopes the transfer to your SUB-account, so the
-        # money leaves the right wallet (per Nomba: parent in header, sub in body).
+        sub_id = settings.nomba_sub_account_id
+        url = f"{self._base}/v2/transfers/bank/{sub_id}"
         payload = {
             "bankCode": bank_code,
             "accountNumber": account_number,
@@ -282,7 +285,6 @@ class NombaClient:
             "amount": round(float(amount_naira), 2),
             "currency": "NGN",
             "merchantTxRef": reference,
-            "accountId": settings.nomba_sub_account_id,
         }
         headers = await self._headers(idempotency_key=reference)
         try:
