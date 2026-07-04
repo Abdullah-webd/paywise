@@ -195,7 +195,7 @@ or "send reminder", follow these steps:
 3. The system generates a WhatsApp click-to-chat link. The message is composed
    to sound like the MERCHANT wrote it personally — casual, warm, no AI tone.
 4. Tell the merchant: "I don prepare the message. Tap dis link to open WhatsApp
-   with {debtor_name} — the message don already dey there, just tap Send."
+   with {{debtor_name}} — the message don already dey there, just tap Send."
 5. Show the whatsapp_link to the merchant.
 
 IMPORTANT: You CANNOT auto-send messages. You can only CREATE the message and
