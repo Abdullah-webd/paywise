@@ -261,16 +261,7 @@ async def api_withdraw(request: Request):
     amount_kobo = int(amount_naira * 100)
     ref = secrets_token()
 
-    # Step 1: Move from sub-account wallet to parent wallet
-    try:
-        wallet_result = await nomba.wallet_transfer(
-            amount_naira=amount_naira,
-            reference=f"w{ref}",
-        )
-    except Exception as e:
-        return JSONResponse({"error": f"Wallet transfer failed: {e}"}, status_code=502)
-
-    # Step 2: Bank transfer from parent account
+    # Direct bank transfer from sub-account (money is in the parent wallet)
     try:
         bank_result = await nomba.transfer(
             bank_code=bank_code,
@@ -279,9 +270,8 @@ async def api_withdraw(request: Request):
             reference=ref,
         )
     except Exception as e:
-        # Wallet transfer already went through — log it, don't reverse (Nomba handles)
-        log.error("Bank transfer failed after wallet transfer: %s", e)
-        return JSONResponse({"error": f"Bank transfer failed: {e}. Wallet transfer reference: w{ref}"}, status_code=502)
+        log.exception("Bank transfer failed: %s", e)
+        return JSONResponse({"error": f"Transfer failed: {e}"}, status_code=502)
 
     # Record withdrawal in DB
     db = get_db()
@@ -293,8 +283,7 @@ async def api_withdraw(request: Request):
         "destination_account_number": account_number,
         "destination_account_name": account_name,
         "status": "SUCCESS",
-        "nomba_wallet_txn_id": wallet_result.get("nomba_transfer_id"),
-        "nomba_bank_txn_id": bank_result.get("nomba_transfer_id"),
+        "nomba_transfer_id": bank_result.get("nomba_transfer_id"),
         "created_at": datetime.now(timezone.utc),
     })
 
