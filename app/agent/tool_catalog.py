@@ -266,8 +266,10 @@ _register(
         "name": "propose_create_collection_account",
         "description": (
             "Propose generating a temporary Nomba account number for a debtor "
-            "to pay a specific debt, and notifying them on WhatsApp. Use after "
-            "a debt exists and the merchant wants to collect. "
+            "to pay a specific debt. DOES NOT auto-send messages — instead generates "
+            "a WhatsApp click-to-chat link the merchant can click to send the payment "
+            "details to the debtor themselves. Use after a debt exists and the merchant "
+            "wants to collect. "
             "CRITICAL: debt_id must be the debt_id field from list_recent_debts or list_drafts "
             "(a 24-char hex string), NOT the reference field (which is a 32-char UUID). "
             "If you pass the wrong ID, the request will fail with debt_not_found."
@@ -402,10 +404,14 @@ _register(
     {
         "name": "propose_send_reminder",
         "description": (
-            "Propose sending a payment reminder SMS to a debtor. "
+            "Propose sending a payment reminder to a debtor via WhatsApp click-to-chat. "
+            "CRITICAL: The agent CANNOT auto-send messages. This generates a WhatsApp link "
+            "the merchant clicks to open the chat with the message pre-typed — just tap Send. "
+            "BEFORE calling this, ALWAYS ask the merchant which language they want the message "
+            "in (pidgin/yoruba/igbo/hausa/english). The message sounds like the merchant "
+            "wrote it personally — it does NOT sound like an AI. "
             "Use when the merchant says 'send am message', 'remind am to pay', "
-            "'tell am make e pay', 'send reminder', etc. "
-            "The merchant sees the message and confirms before it sends."
+            "'tell am make e pay', 'send reminder', etc."
         ),
         "parameters": {
             "type": "object",
@@ -413,6 +419,11 @@ _register(
                 "merchant_id": {"type": "string"},
                 "debtor_id": {"type": "string"},
                 "debt_id": {"type": "string"},
+                "preferred_lang": {
+                    "type": "string",
+                    "enum": ["pidgin", "yoruba", "igbo", "hausa", "english"],
+                    "description": "Language the merchant chose for this message. ASK the merchant first before setting this.",
+                },
             },
             "required": ["merchant_id", "debtor_id", "debt_id"],
         },

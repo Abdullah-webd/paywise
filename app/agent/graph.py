@@ -339,9 +339,22 @@ def _ack_for(action_type: str, result: dict) -> str:
             f"Don complete am ✅ {result.get('amount')} for "
             f"{result.get('debtor_name')}.")
     if action_type == "create_collection_account":
-        return (f"Done! I don send {result.get('bank_name', 'Nomba')} account "
-                f"{result.get('account_number')} to the debtor. I go tell you "
-                f"when e pay.")
+        wa_link = result.get("whatsapp_link", "")
+        acct_num = result.get("account_number", "")
+        bank = result.get("bank_name", "Nomba")
+        debtor = result.get("debtor_name", "the debtor")
+        lines = [
+            f"Account number don ready! ✅\n\n"
+            f"Bank: {bank}\n"
+            f"Account: {acct_num}\n\n"
+            f"Make the debtor pay into dis account. Once e pay, I go mark am as paid automatically.\n\n"
+        ]
+        if wa_link:
+            lines.append(
+                f"Tap dis link to send the payment details to {debtor} on WhatsApp — "
+                f"the message don already dey typed, just tap Send:\n{wa_link}"
+            )
+        return "".join(lines)
     if action_type == "mark_paid":
         return f"Updated ✅ Balance now {result.get('balance')} ({result.get('status')})."
     if action_type == "edit_debt":
@@ -352,12 +365,13 @@ def _ack_for(action_type: str, result: dict) -> str:
         state = "ON" if result.get("reminders_enabled") else "OFF"
         return f"Reminders don turn {state}. ✅"
     if action_type == "send_reminder":
-        if result.get("sent"):
-            link = result.get("whatsapp_link", "")
+        link = result.get("whatsapp_link", "")
+        debtor = result.get("debtor_name", "the debtor")
+        if link:
             return (
-                f"I don prepare the message for {result.get('debtor_name', 'the debtor')}. ✅\n\n"
-                f"Click dis link to send am:\n{link}\n\n"
-                f"E go open WhatsApp with the message already typed. Just tap Send."
+                f"I don prepare the message for {debtor}. ✅\n\n"
+                f"Tap dis link to send am on WhatsApp — "
+                f"the message don already dey typed, just tap Send:\n{link}"
             )
         return "E no go through. " + str(result.get("error", "unknown error")) + "."
     return "Done ✅"

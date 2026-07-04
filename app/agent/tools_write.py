@@ -533,9 +533,12 @@ async def commit_create_collection_account(params: dict) -> dict:
         "created_at": datetime.now(timezone.utc),
     })
 
-    # notify the debtor (WhatsApp) — short text, merchant's preferred flavour
-    wa = get_whatsapp()
-    msg = _build_debtor_payment_request(
+    # --- Build WhatsApp click-to-chat link so the MERCHANT sends it themselves ---
+    # NO auto-sending. The merchant gets a link — they click, message is pre-typed,
+    # they just tap Send.
+    from urllib.parse import quote
+    debtor_phone = debtor["phone_normalized"].lstrip("+")
+    payment_msg = _build_debtor_payment_request(
         debtor_name=debtor["name"],
         merchant_business=merchant.get("business_name", "your store"),
         amount_naira=params["amount_naira"],
@@ -544,12 +547,15 @@ async def commit_create_collection_account(params: dict) -> dict:
         bank=acct.get("bank_name", "Nomba"),
         lang=merchant.get("preferred_lang", "pidgin"),
     )
-    await wa.send_sms(debtor["phone_normalized"], msg)
+    wa_link = f"https://wa.me/{debtor_phone}?text={quote(payment_msg, safe='')}"
 
     return {
         "account_number": acct["account_number"],
         "bank_name": acct.get("bank_name", "Nomba"),
         "debt_id": params["debt_id"],
+        "whatsapp_link": wa_link,
+        "debtor_name": debtor["name"],
+        "message": payment_msg,
     }
 
 
@@ -558,12 +564,11 @@ def _build_debtor_payment_request(
     account_number, bank, lang,
 ) -> str:
     naira = f"₦{float(amount_naira):,.0f}"
-    # keep it bilingual-ish for clarity; debtors may not match merchant's lang
     return (
-        f"Hello {debtor_name}, {merchant_business} send dis message. "
-        f"You get credit of {naira} for {goods}. "
-        f"Abeg pay into: {account_number} ({bank}). "
-        f"Dis account go expire soon. Once you pay, your balance go clear. 🙏"
+        f"{debtor_name}, na {merchant_business}. "
+        f"I dey send you the account to pay the {naira} for {goods}. "
+        f"Account: {account_number} | Bank: {bank}. "
+        f"Once you pay, your balance go clear. Thank you! 🙏"
     )
 
 
@@ -944,12 +949,15 @@ async def propose_send_reminder(
     merchant_id: str,
     debtor_id: str,
     debt_id: str,
+    preferred_lang: str = "",
 ) -> dict:
-    """Propose sending a payment reminder SMS to a debtor.
+    """Propose sending a payment reminder to a debtor via WhatsApp click-to-chat.
 
-    Looks up the debt and debtor, composes a reminder message in the
-    merchant's preferred language, and stashes it as a pending action.
-    The merchant sees the proposed message and confirms before it sends.
+    DOES NOT auto-send. Generates a WhatsApp link the merchant can click to open
+    the chat with the message pre-filled — they just hit Send.
+
+    If preferred_lang is empty, the AI should ASK the merchant which language
+    they want (pidgin/yoruba/igbo/hausa/english) BEFORE calling this tool.
     """
     db = get_db()
     debt = await db.debts.find_one({"_id": _oid(debt_id), "merchant_id": merchant_id})
@@ -967,39 +975,39 @@ async def propose_send_reminder(
     remaining = fmt_naira(debt["amount_kobo"] - debt.get("paid_kobo", 0))
     goods = debt.get("goods_description", "your goods")
     business = (merchant.get("business_name") or "Your supplier") if merchant else "Your supplier"
-    lang = (merchant.get("preferred_lang") or "pidgin") if merchant else "pidgin"
+    lang = preferred_lang or (merchant.get("preferred_lang") or "pidgin") if merchant else "pidgin"
 
-    # Build message in the appropriate language
+    # Personalised messages — sounds like the merchant wrote it themselves
     messages = {
         "pidgin": (
-            f"Hello {debtor['name']}, na {business}. "
-            f"Dis na friendly reminder say your balance of {remaining} "
-            f"for {goods} still dey outstanding. Total amount na {amount}. "
-            f"Abeg make sure say you pay before the deadline. Thank you! 🙏"
+            f"{debtor['name']}, na me {business}. "
+            f"Abeg no forget say you still get {remaining} wey remain "
+            f"for {goods}. Na {amount} be the total. "
+            f"Make you try pay before e late. Thank you! 🙏"
         ),
         "yoruba": (
-            f"{debtor['name']}, ẹ kú àárọ̀. {business} ló ń kí yín. "
-            f"Ẹ jọ̀wọ́, ẹ jẹ́ ká rántí pé ẹ ṣì ní {remaining} láti san "
+            f"{debtor['name']}, ẹ kú iṣẹ́ o. {business} ló ń kí yín. "
+            f"Ẹ jọ̀ọ́, ẹ má gbàgbé pé ẹ ṣì ní {remaining} láti san "
             f"fún {goods}. Gbogbo owó náà jẹ́ {amount}. "
-            f"Ẹ jọ̀wọ́, ẹ san án kí àkókò tó parí. A dúpẹ́! 🙏"
+            f"Ẹ jọ̀ọ́ ẹ san án tí àkókò bá ṣì wà. A dúpẹ́! 🙏"
         ),
         "igbo": (
-            f"Ndewo {debtor['name']}, ọ bụ {business}. "
-            f"I chetara gị na i ji ụgwọ {remaining} maka {goods}. "
+            f"{debtor['name']}, kedu? Ọ bụ {business}. "
+            f"Biko echefula na i ji m {remaining} maka {goods}. "
             f"Ngụkọta ụgwọ gị bụ {amount}. "
-            f"Biko gbaa mbọ kwụọ tupu oge agwụ. Daalụ! 🙏"
+            f"Biko kwụọ tupu oge agwụ. Daalụ nke ukwuu! 🙏"
         ),
         "hausa": (
-            f"Sannu {debtor['name']}, daga {business}. "
-            f"Wannan tunatarwa ce cewa har yanzu kuna da bashin {remaining} "
-            f"na {goods}. Jimlar bashin ku {amount} ne. "
-            f"Don Allah ku biya kafin wa'adin ya kure. Na gode! 🙏"
+            f"{debtor['name']}, sannu! Daga wajen {business}. "
+            f"Kar ka manta har yanzu kana da bashin {remaining} "
+            f"na {goods}. Jimlar bashin ka {amount} ne. "
+            f"Don Allah ka biya kafin wa'adi ya wuce. Nagode sosai! 🙏"
         ),
         "english": (
-            f"Hello {debtor['name']}, this is {business}. "
-            f"Friendly reminder: your outstanding balance of {remaining} "
-            f"for {goods} is still due. Total amount: {amount}. "
-            f"Please make payment before the deadline. Thank you! 🙏"
+            f"Hi {debtor['name']}, it's {business}. "
+            f"Just a quick reminder — your balance of {remaining} "
+            f"for {goods} is still due. Total is {amount}. "
+            f"Please pay at your earliest convenience. Thanks! 🙏"
         ),
     }
     msg = messages.get(lang, messages["pidgin"])
@@ -1013,17 +1021,20 @@ async def propose_send_reminder(
             "debt_id": debt_id,
             "message": msg,
         },
-        "summary": f"Prepare a WhatsApp reminder for {debtor['name']}. The merchant go get a link wey dem fit click to send am.",
+        "summary": f"I don prepare WhatsApp message for {debtor['name']} in {lang}. "
+                    f"The merchant go get a link wey dem fit click to open WhatsApp "
+                    f"with the message already typed — dem just go tap Send.",
     }
 
 
 async def commit_send_reminder(params: dict) -> dict:
-    """Generate a WhatsApp click-to-chat link with the reminder message pre-filled.
+    """Generate WhatsApp click-to-chat link — merchant clicks, taps Send.
 
-    The merchant clicks the link, it opens WhatsApp to the debtor's chat with the
-    message already typed. They just hit Send. No SMS needed, works on any plan.
+    NO auto-sending. The link opens WhatsApp Web/mobile with the message
+    pre-typed in the chat. The merchant just hits Send.
     """
     from urllib.parse import quote
+    import urllib.parse as _up
 
     db = get_db()
     debtor = await db.debtors.find_one({"_id": _oid(params["debtor_id"])})
@@ -1031,15 +1042,20 @@ async def commit_send_reminder(params: dict) -> dict:
         return {"error": "debtor_not_found"}
 
     phone = debtor["phone_normalized"]
-    # Normalise to international format without + for wa.me links
     clean = phone.lstrip("+")
-    msg_encoded = quote(params["message"], safe="")
-    wa_link = f"https://wa.me/{clean}?text={msg_encoded}"
+    msg = params["message"]
+    # wa.me opens WhatsApp directly on mobile; api.whatsapp.com for desktop
+    wa_link = f"https://wa.me/{clean}?text={quote(msg, safe='')}"
 
     return {
-        "sent": True,
-        "debtor_name": debtor["name"],
         "whatsapp_link": wa_link,
+        "debtor_name": debtor["name"],
+        "debtor_phone": phone,
+        "message": msg,
+        "instruction": (
+            f"Tap dis link to open WhatsApp chat with {debtor['name']}. "
+            f"The message don already dey typed — just tap Send."
+        ),
     }
 
 
