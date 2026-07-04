@@ -263,6 +263,7 @@ class NombaClient:
         self,
         bank_code: str,
         account_number: str,
+        account_name: str,
         amount_naira: float,
         reference: str,
     ) -> dict[str, Any]:
@@ -275,13 +276,13 @@ class NombaClient:
         # accountId in the BODY scopes the transfer to your SUB-account, so the
         # money leaves the right wallet (per Nomba: parent in header, sub in body).
         payload = {
-            "merchantBankCode": bank_code,
+            "bankCode": bank_code,
             "accountNumber": account_number,
+            "accountName": account_name,
             "amount": round(float(amount_naira), 2),
             "currency": "NGN",
-            "reference": reference,
+            "merchantTxRef": reference,
             "accountId": settings.nomba_sub_account_id,
-            "type": "bank",   # nomba transfer type for standard bank payout
         }
         headers = await self._headers(idempotency_key=reference)
         try:

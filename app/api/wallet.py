@@ -266,6 +266,7 @@ async def api_withdraw(request: Request):
         bank_result = await nomba.transfer(
             bank_code=bank_code,
             account_number=account_number,
+            account_name=account_name,
             amount_naira=amount_naira,
             reference=ref,
         )
