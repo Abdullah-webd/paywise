@@ -430,6 +430,15 @@ async def _auto_settle_nomba_payment(
             )
 
             await session.commit_transaction()
+
+            # Expire the VA at Nomba so no more payments come in
+            if fully_paid:
+                try:
+                    from app.services.nomba import nomba
+                    await nomba.expire_virtual_account(alias_ref)
+                except Exception:
+                    pass  # non-critical — VA will expire naturally via TTL
+
             return {"settled": True, "fully_paid": fully_paid}
 
 

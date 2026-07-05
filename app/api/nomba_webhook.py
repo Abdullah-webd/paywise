@@ -23,7 +23,7 @@ from bson import ObjectId
 
 from app.db import get_db
 import app.db as _db
-from app.services.nomba import verify_nomba_webhook_signature
+from app.services.nomba import verify_nomba_webhook_signature, nomba
 from app.services.whatsapp import get_whatsapp
 from app.utils import naira_to_kobo, fmt_naira
 
@@ -94,6 +94,8 @@ async def nomba_webhook(
     settled = await _settle(alias_ref, txn_ref, amount_kobo, payload)
     if settled and settled.get("debt_id"):
         bg.add_task(_send_receipts, settled["debt_id"], settled["fully_paid"])
+        if settled.get("account_ref"):
+            bg.add_task(_expire_va, settled["account_ref"])
     return JSONResponse({"status": "processed", **{k: v for k, v in settled.items() if k != "raw"}})
 
 
@@ -185,12 +187,24 @@ async def _settle(alias_ref: str, txn_ref: str, amount_kobo: int, raw: dict) -> 
 
             log.info("settled debt %s (+%s) → merchant %s",
                      str(debt["_id"]), fmt_naira(amount_kobo), debt["merchant_id"])
+            # Return account_ref so we can expire the VA at Nomba after commit
+            account_ref = debt.get("reference") if fully_paid else None
             return {
                 "debt_id": str(debt["_id"]),
                 "merchant_id": debt["merchant_id"],
                 "amount": fmt_naira(amount_kobo),
                 "fully_paid": fully_paid,
+                "account_ref": account_ref,
             }
+
+
+async def _expire_va(account_ref: str) -> None:
+    """Tell Nomba to expire the VA — stops further payments on a settled debt."""
+    try:
+        result = await nomba.expire_virtual_account(account_ref)
+        log.info("VA %s expired at Nomba: %s", account_ref, result)
+    except Exception:
+        log.exception("Failed to expire VA %s at Nomba (non-critical)", account_ref)
 
 
 async def _send_receipts(debt_id: str, fully_paid: bool) -> None:
