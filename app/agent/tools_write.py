@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import secrets
 import string
+import logging
 from datetime import datetime, timezone, date
 from typing import Optional
 
@@ -22,6 +23,8 @@ from app.db import get_db
 from app.models import gen_ref
 from app.utils import normalize_phone, naira_to_kobo, fmt_naira
 from bson import ObjectId
+
+log = logging.getLogger("paywise.agent")
 
 
 def _oid(_id: str):
