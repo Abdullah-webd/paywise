@@ -57,8 +57,8 @@ class Settings(BaseSettings):
     nomba_account_id: str           # PARENT account ID — goes in the `accountId` header
     nomba_sub_account_id: str       # SUB-account ID — scopes VAs/transfers in the body
     nomba_webhook_secret: str
-    nomba_virtual_account_ttl_hours: int = 48   # fallback only — due_date drives expiry
-    collection_grace_days: int = 2              # extra days past due_date before expiry
+    nomba_virtual_account_ttl_hours: int = 720  # 30 days fallback when no due_date
+    collection_grace_days: int = 7               # extra days past due_date before expiry
 
     @property
     def is_dev(self) -> bool:
