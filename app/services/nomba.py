@@ -412,19 +412,24 @@ class NombaClient:
         results = data.get("results", [])
         txns = []
         for t in results:
+            amount_naira = float(t.get("amount", 0))
+            fee_naira = float(t.get("fixedCharge", 0))
+            balance_naira = float(t.get("walletBalance", 0))
             txns.append({
                 "id": t.get("id"),
                 "status": t.get("status"),
                 "type": t.get("type"),
-                "amount": float(t.get("amount", 0)),
-                "fee": float(t.get("fixedCharge", 0)),
+                "amount_naira": amount_naira,
+                "amount_formatted": f"₦{amount_naira:,.2f}",
+                "fee_naira": fee_naira,
                 "entry_type": t.get("entryType"),
                 "sender_name": t.get("senderName") or t.get("ktaSenderName"),
                 "sender_account": t.get("accountNumber") or t.get("ktaSenderAccountNumber"),
                 "sender_bank": t.get("bankName") or t.get("ktaSenderBankCode"),
                 "narration": t.get("narration"),
                 "time_created": t.get("timeCreated"),
-                "wallet_balance": float(t.get("walletBalance", 0)),
+                "wallet_balance_naira": balance_naira,
+                "wallet_balance_formatted": f"₦{balance_naira:,.2f}",
                 "virtual_account_reference": t.get("virtualAccountReference"),
                 "recipient_account_number": t.get("recipientAccountNumber"),
             })

@@ -319,7 +319,8 @@ async def get_nomba_transactions(merchant_id: str, page: int = 1, count: int = 1
             continue
 
         # --- AUTO-SETTLE: payment found, not yet recorded ---
-        amount_kobo = int(txn["amount"] * 100)
+        amount_naira = txn.get("amount_naira", txn.get("amount", 0))
+        amount_kobo = int(amount_naira * 100)
         try:
             settled = await _auto_settle_nomba_payment(
                 va_ref, nomba_txn_id, amount_kobo, str(debt["_id"]),
