@@ -385,11 +385,11 @@ async def deliver_node(state: AgentState) -> AgentState:
     Voice-note decision (voice-by-default):
       - ALWAYS voice unless:
         1. Merchant explicitly asked for text ("send as text", "type am", etc.), OR
-        2. Reply has passwords/URLs (safety/UX) — unless merchant asked for voice
+        2. Reply contains a password, OR
+        3. Reply contains an actual URL (http:// or https://)
     """
     _FORCE_TEXT_MARKERS = [
-        "password", "your password", "your wallet link",
-        "http://", "https://",
+        "your password na", "your password is",
     ]
     _FORCE_TEXT_USER_MARKERS = [
         "send as text", "type am", "text me", "write am",
@@ -416,21 +416,19 @@ async def deliver_node(state: AgentState) -> AgentState:
             state["reply_text"] = text
 
             lower = text.lower()
-            force_text = any(m.lower() in lower for m in _FORCE_TEXT_MARKERS)
+            has_password = any(m.lower() in lower for m in _FORCE_TEXT_MARKERS)
+            has_url = "http://" in lower or "https://" in lower
+            force_text = has_password or has_url
             if merchant_asked_text:
-                # Merchant explicitly wants text
                 state["reply_is_long"] = False
             elif merchant_asked_voice:
-                # Merchant explicitly asked for voice — override everything
                 state["reply_is_long"] = True
             elif force_text:
-                # Safety: passwords/URLs in voice notes are bad UX
                 state["reply_is_long"] = False
             else:
-                # DEFAULT: always voice
                 state["reply_is_long"] = True
-            log.info("deliver_node: force_text=%s asked_text=%s asked_voice=%s reply_is_long=%s len=%d",
-                     force_text, merchant_asked_text, merchant_asked_voice, state["reply_is_long"], len(text))
+            log.info("deliver_node: force_text=%s has_pwd=%s has_url=%s asked_text=%s asked_voice=%s reply_is_long=%s len=%d",
+                     force_text, has_password, has_url, merchant_asked_text, merchant_asked_voice, state["reply_is_long"], len(text))
             break
     return state
 
