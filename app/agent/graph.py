@@ -462,11 +462,21 @@ def confirm_router(state: AgentState) -> str:
             if _is_yes(text):
                 return "commit"
             if _is_no(text):
-                # clear the pending action, let the agent re-engage
+                # clear the pending action, inject a system note telling the
+                # agent the old info was WRONG so it doesn't keep reusing it
                 state["pending_action"] = None
                 state["awaiting_confirmation"] = False
+                state["messages"].append(SystemMessage(
+                    content=(
+                        "CRITICAL: The merchant just REJECTED your last proposal because "
+                        "the information was WRONG. The name, phone, or details you used "
+                        "are INCORRECT. The merchant is about to give you the CORRECT info. "
+                        "Use ONLY the corrected info from their next message. Do NOT repeat "
+                        "any name or detail from the rejected proposal."
+                    )
+                ))
                 state["messages"].append(AIMessage(
-                    content="Okay, I don cancel am. If you wan change something or start again, tell me wetin you want make I change."
+                    content="Okay, I hear you. Tell me the correct details and I go use am."
                 ))
                 return "deliver"
             # ambiguous reply — treat as a new instruction, re-enter agent
