@@ -58,11 +58,40 @@ class WhatsAppSender:
         return p
 
     async def send_text(self, to_phone: str, body: str) -> None:
-        await asyncio.to_thread(
-            self._client.messages.create,
-            from_=self._from, to=self._to(to_phone), body=body
-        )
-        log.info("WA text → %s: %s", to_phone, body[:80])
+        # WhatsApp has a 1600 character limit per message.
+        # Split long messages into chunks.
+        max_len = 1550  # leave a bit of headroom
+        if len(body) <= max_len:
+            await asyncio.to_thread(
+                self._client.messages.create,
+                from_=self._from, to=self._to(to_phone), body=body
+            )
+            log.info("WA text -> %s: %s", to_phone, body[:80])
+            return
+
+        # Split into chunks, try to break at sentence boundaries
+        chunks = []
+        remaining = body
+        while len(remaining) > max_len:
+            # Find last sentence break within limit
+            cut = remaining.rfind(". ", 0, max_len)
+            if cut == -1:
+                cut = remaining.rfind(" ", 0, max_len)
+            if cut == -1:
+                cut = max_len
+            chunks.append(remaining[:cut+1].strip())
+            remaining = remaining[cut+1:].strip()
+        if remaining:
+            chunks.append(remaining)
+
+        for i, chunk in enumerate(chunks):
+            await asyncio.to_thread(
+                self._client.messages.create,
+                from_=self._from, to=self._to(to_phone), body=chunk
+            )
+            log.info("WA text -> %s [%d/%d]: %s", to_phone, i+1, len(chunks), chunk[:60])
+            if i < len(chunks) - 1:
+                await asyncio.sleep(0.5)
 
     async def send_sms(self, to_phone: str, body: str) -> None:
         """Send a plain SMS via Twilio — no sandbox restrictions like WhatsApp."""
