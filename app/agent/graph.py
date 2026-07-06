@@ -382,17 +382,23 @@ def _ack_for(action_type: str, result: dict) -> str:
 async def deliver_node(state: AgentState) -> AgentState:
     """Capture the agent's final text reply for the delivery layer.
 
-    Voice-note decision:
-      - ALWAYS text if the reply contains passwords, URLs, or account numbers.
-      - Voice for replies >100 chars OR if merchant explicitly asked for voice.
+    Voice-note decision (voice-by-default):
+      - ALWAYS voice unless:
+        1. Merchant explicitly asked for text ("send as text", "type am", etc.), OR
+        2. Reply has passwords/URLs (safety/UX) — unless merchant asked for voice
     """
     _FORCE_TEXT_MARKERS = [
         "password", "your password", "your wallet link",
         "http://", "https://",
     ]
+    _FORCE_TEXT_USER_MARKERS = [
+        "send as text", "type am", "text me", "write am",
+        "no voice", "no audio", "i want text", "send text",
+    ]
 
-    # Detect if merchant explicitly asked for a voice note in their last message
+    # Detect if merchant explicitly asked for voice or text
     merchant_asked_voice = False
+    merchant_asked_text = False
     for msg in reversed(state["messages"]):
         if isinstance(msg, HumanMessage):
             last_merchant = str(msg.content).lower()
@@ -400,7 +406,8 @@ async def deliver_node(state: AgentState) -> AgentState:
                 "voice note", "send am as voice", "voice message",
                 "send voice", "audio", "talk am", "speak am",
             ])
-            log.info("deliver_node: merchant_asked_voice=%s (msg=%.60s)", merchant_asked_voice, last_merchant)
+            merchant_asked_text = any(phrase in last_merchant for phrase in _FORCE_TEXT_USER_MARKERS)
+            log.info("deliver_node: asked_voice=%s asked_text=%s (msg=%.60s)", merchant_asked_voice, merchant_asked_text, last_merchant)
             break
 
     for msg in reversed(state["messages"]):
@@ -410,17 +417,20 @@ async def deliver_node(state: AgentState) -> AgentState:
 
             lower = text.lower()
             force_text = any(m.lower() in lower for m in _FORCE_TEXT_MARKERS)
-            if merchant_asked_voice:
-                # Merchant explicitly asked -- always voice, even if text has URLs/passwords
+            if merchant_asked_text:
+                # Merchant explicitly wants text
+                state["reply_is_long"] = False
+            elif merchant_asked_voice:
+                # Merchant explicitly asked for voice — override everything
                 state["reply_is_long"] = True
             elif force_text:
+                # Safety: passwords/URLs in voice notes are bad UX
                 state["reply_is_long"] = False
             else:
-                # Lower threshold: >100 chars triggers voice
-                word_count = len(text.split())
-                state["reply_is_long"] = (len(text) > 100)
-            log.info("deliver_node: force_text=%s merchant_voice=%s reply_is_long=%s len=%d words=%d",
-                     force_text, merchant_asked_voice, state["reply_is_long"], len(text), len(text.split()))
+                # DEFAULT: always voice
+                state["reply_is_long"] = True
+            log.info("deliver_node: force_text=%s asked_text=%s asked_voice=%s reply_is_long=%s len=%d",
+                     force_text, merchant_asked_text, merchant_asked_voice, state["reply_is_long"], len(text))
             break
     return state
 
