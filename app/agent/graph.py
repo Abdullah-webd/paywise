@@ -466,7 +466,7 @@ def confirm_router(state: AgentState) -> str:
                 state["pending_action"] = None
                 state["awaiting_confirmation"] = False
                 state["messages"].append(AIMessage(
-                    content="Okay, I don cancel am. Wetin you wan do next?"
+                    content="Okay, I don cancel am. If you wan change something or start again, tell me wetin you want make I change."
                 ))
                 return "deliver"
             # ambiguous reply — treat as a new instruction, re-enter agent
