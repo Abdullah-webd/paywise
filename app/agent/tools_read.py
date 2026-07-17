@@ -342,6 +342,56 @@ async def get_nomba_transactions(merchant_id: str, page: int = 1, count: int = 1
 
         enriched.append(entry)
 
+    # --- FALLBACK: Nomba production API often returns empty results ---
+    # The /v1/transactions/accounts/{id} endpoint with new credentials
+    # returns {"code":"00","status":false,"data":{"results":[]}} even
+    # when webhook payments have been settled. As fallback we check
+    # local MongoDB for recently settled payments.
+    if len(enriched) == 0:
+        import logging as _log
+        _log.getLogger("paywise.agent").info(
+            "Nomba returned 0 transactions, checking local DB")
+        recent_txns = await db.transactions.find({
+            "merchant_id": merchant_id,
+            "status": "SUCCESS",
+        }).sort("created_at", -1).limit(count).to_list(count)
+
+        for txn in recent_txns:
+            txn_id = txn.get("reference", "")
+            debt_id = txn.get("debt_id", "")
+            amount_kobo = txn.get("amount_kobo", 0)
+            created = txn.get("created_at")
+            debt = None
+            debtor = None
+            if debt_id:
+                debt = await db.debts.find_one({"_id": _oid(debt_id)})
+                if debt and debt.get("debtor_id"):
+                    debtor = await db.debtors.find_one(
+                        {"_id": _oid(debt["debtor_id"])})
+            nama = (debtor or {}).get("name", "Unknown")
+            goods = (debt or {}).get("goods_description", "Unknown")
+            dstatus = (debt or {}).get("status", "SETTLED")
+            enriched.append({
+                "id": txn_id,
+                "type": "credit",
+                "amount_naira": amount_kobo / 100.0,
+                "amount_formatted": f"N{amount_kobo/100:,.2f}",
+                "status": "SUCCESS",
+                "entry_type": "CREDIT",
+                "sender_name": nama,
+                "narration": f"Payment for {goods}",
+                "time_created": str(created) if created else "",
+                "source": "webhook_local",
+                "matched_debt": {
+                    "debt_id": debt_id,
+                    "reference": (debt or {}).get("reference", ""),
+                    "debtor_name": nama,
+                    "goods": goods,
+                    "status": dstatus,
+                },
+                "already_settled": True,
+            })
+
     return {
         "success": True,
         "transactions": enriched,
