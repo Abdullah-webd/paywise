@@ -392,11 +392,11 @@ class NombaClient:
     async def get_sub_account_transactions(self, page: int = 1, size: int = 10) -> dict[str, Any]:
         """Fetch recent transactions for the configured sub-account.
 
-        GET /v1/transactions/accounts/{subAccountId}?page=1&size=10
+        GET /v1/transactions/accounts/{subAccountId}?limit=10
         Returns a list of transactions (credits, debits, fees, etc.).
         """
         sub_id = settings.nomba_sub_account_id
-        url = f"{self._base}/v1/transactions/accounts/{sub_id}?page={page}&size={size}"
+        url = f"{self._base}/v1/transactions/accounts/{sub_id}?limit={size}"
         headers = await self._headers()
         try:
             resp = await self._http.get(url, headers=headers)

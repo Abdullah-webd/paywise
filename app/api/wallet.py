@@ -136,16 +136,6 @@ async def api_summary(request: Request):
         log.warning("Could not fetch live Nomba balance: %s", e)
         live_balance_kobo = merchant.get("balance_kobo", 0)
     
-    # Subtract successful withdrawals (transfers drain parent wallet, not sub-account)
-    withdrawal_total = 0
-    async for w in db.withdrawals.find({
-        "merchant_id": str(merchant["_id"]),
-        "status": "SUCCESS",
-    }):
-        withdrawal_total += w.get("amount_kobo", 0)
-    live_balance_kobo -= withdrawal_total
-    if live_balance_kobo < 0:
-        live_balance_kobo = 0
     live_balance_str = fmt_naira(live_balance_kobo)
 
     return {
@@ -262,16 +252,7 @@ async def api_withdraw(request: Request):
     try:
         live = await nomba.get_sub_account_balance()
         live_balance_naira = live["balance_naira"]
-        # Subtract withdrawals (they debit from parent, not sub-account)
-        withdrawal_total = 0
-        async for w in db.withdrawals.find({
-            "merchant_id": str(merchant["_id"]),
-            "status": "SUCCESS",
-        }):
-            withdrawal_total += w.get("amount_kobo", 0)
-        live_balance_naira -= withdrawal_total / 100
-        if live_balance_naira < 0:
-            live_balance_naira = 0
+        # NOTE: balance is now displayed directly from Nomba API (no subtraction)
     except Exception:
         return JSONResponse({"error": "Could not verify bank balance. Try again."}, status_code=502)
 
