@@ -82,3 +82,8 @@ PRESENTATION.md
 new_voice_*.wav
 tts_*.wav
 tts_test_*.wav
+
+# ---- Node (only needed transiently for `railway config` IaC CLI) ----
+node_modules/
+package.json
+package-lock.json
