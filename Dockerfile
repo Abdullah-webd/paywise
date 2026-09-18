@@ -10,5 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy app code
 COPY . .
 
-# Railway/Render set PORT env var automatically
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Railway/Render inject PORT at runtime; app/__main__.py reads it in Python,
+# so no shell expansion is required (exec-form CMD also forwards signals).
+CMD ["python", "-m", "app"]
